@@ -1,40 +1,61 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/telas/tela_login.dart';
-import 'package:kwanga/telas/tela_principal.dart';
+import 'package:kwanga/screens/login_screens/login_screen.dart';
+import 'package:kwanga/screens/login_screens/email_verification_screen.dart';
+import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import 'package:kwanga/widgets/buttons/icon_button.dart';
+import 'package:kwanga/widgets/buttons/main_button.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
 
-import 'package:kwanga/temas/foco_sereno.dart';
-import 'package:kwanga/widgets/botoes/botao_icone.dart';
-import 'package:kwanga/widgets/botoes/botao_principal.dart';
+import 'package:kwanga/domain/usecases/auth_usecases.dart';
 
-import '../temas/texto.dart';
-
-class TelaCadastro extends StatefulWidget {
-  const TelaCadastro({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<TelaCadastro> createState() => _TelaCadastroState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _TelaCadastroState extends State<TelaCadastro> {
-  bool _aceitoTermos = false;
+class _RegisterScreenState extends State<RegisterScreen> {
+  final AuthUseCases _auth = AuthUseCases();
 
-  void _alteraTermos() {
+
+
+  Future<void> _register() async {
+    final success = await _auth.registerUser(
+      _email,
+      password,
+    );
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Conta criada com sucesso')));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => EmailVerification(email: _email)));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Falha ao criar conta')));
+    }
+  }
+
+  bool acceptTerms = false;
+
+  void changeTerms() {
     setState(() {
-      _aceitoTermos = !_aceitoTermos;
+      acceptTerms = !acceptTerms;
     });
   }
 
   // variáveis de controle para validação
   final _formKey = GlobalKey<FormState>();
   var _email = '';
-  var _senha = '';
-  var _termos = false;
+  var password = '';
+  var terms = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: cPrincipal,
+      backgroundColor: cMainColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -50,17 +71,17 @@ class _TelaCadastroState extends State<TelaCadastro> {
                     const Spacer(),
                     Column(
                       children: [
-                        Text('Criar conta', style: tTitulo),
+                        Text('Conta', style: tTitle),
                         Text(
                           'Nunca perca o seu progresso',
-                          style: tNormal.copyWith(color: cBranco),
+                          style: tNormal.copyWith(color: cWhiteColor),
                         ),
                       ],
                     ),
                     const Spacer(),
                     Container(
                       decoration: BoxDecoration(
-                        color: cBranco,
+                        color: cWhiteColor,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(24.0),
                           topRight: Radius.circular(24.0),
@@ -82,14 +103,16 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                     decoration: InputDecoration(
                                       label: Text('Email'),
                                       enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(color: cPreto),
+                                        borderSide: BorderSide(
+                                          color: cBlackColor,
+                                        ),
                                         borderRadius: BorderRadius.circular(
                                           12.0,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: cSecundaria,
+                                          color: cSecondaryColor,
                                           width: 2.0,
                                         ),
                                         borderRadius: BorderRadius.circular(
@@ -109,6 +132,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                       if (!emailRegex.hasMatch(value)) {
                                         return 'Email inválido';
                                       }
+                                      _email = value;
                                       return null;
                                     },
                                     onSaved: (value) {
@@ -124,14 +148,16 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                       label: Text('Senha'),
                                       labelStyle: tNormal,
                                       enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(color: cPreto),
+                                        borderSide: BorderSide(
+                                          color: cBlackColor,
+                                        ),
                                         borderRadius: BorderRadius.circular(
                                           12.0,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: cSecundaria,
+                                          color: cSecondaryColor,
                                           width: 2.0,
                                         ),
                                         borderRadius: BorderRadius.circular(
@@ -146,19 +172,20 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                       if (value.length < 8) {
                                         return 'Senha fraca. Digite outra';
                                       }
-                                      return null;
+                                      // return null;
                                     },
-                                    onSaved: (value) {
-                                      _senha = value!;
+                                    onChanged: (value) {
+                                      password = value;
                                     },
                                   ),
 
+                                  // Campo de concordo com os termos
                                   GestureDetector(
                                     onTap: () {
                                       setState(() {
-                                        _aceitoTermos = !_aceitoTermos;
+                                        acceptTerms = !acceptTerms;
                                       });
-                                      _termos = _aceitoTermos;
+                                      terms = acceptTerms;
                                     },
                                     child: Row(
                                       spacing: 8.0,
@@ -166,10 +193,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                           MainAxisAlignment.start,
                                       children: [
                                         Icon(
-                                          _aceitoTermos
+                                          acceptTerms
                                               ? Icons.check_box_outlined
                                               : Icons.check_box_outline_blank,
-                                          color: cPreto,
+                                          color: cBlackColor,
                                         ),
                                         Expanded(
                                           child: Text(
@@ -182,10 +209,10 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                   ),
 
                                   GestureDetector(
-                                    child: BotaoPrincipal(texto: 'Criar'),
+                                    child: MainButton(buttonText: 'Criar'),
                                     onTap: () {
                                       if (_formKey.currentState!.validate()) {
-                                        if (!_termos) {
+                                        if (!terms) {
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
@@ -197,11 +224,12 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                           );
                                           return;
                                         } else {
-                                          Navigator.pushReplacement(
+                                          _register();
+                                          Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  const TelaPrincipal(),
+                                                  EmailVerification(email: _email,),
                                             ),
                                           );
                                         }
@@ -220,7 +248,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                               children: [
                                 Expanded(
                                   child: Divider(
-                                    color: cPreto,
+                                    color: cBlackColor,
                                     thickness: 1,
                                     endIndent:
                                         10, // espaço entre a linha e o texto
@@ -229,7 +257,7 @@ class _TelaCadastroState extends State<TelaCadastro> {
                                 Text('ou crie com', style: tNormal),
                                 Expanded(
                                   child: Divider(
-                                    color: cPreto,
+                                    color: cBlackColor,
                                     thickness: 1,
                                     indent:
                                         10, // espaço entre o texto e a linha
@@ -243,9 +271,9 @@ class _TelaCadastroState extends State<TelaCadastro> {
                               spacing: 8.0,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                BotaoIcone(nome_icone: 'google'),
-                                BotaoIcone(nome_icone: 'apple_logo'),
-                                BotaoIcone(nome_icone: 'microsoft'),
+                                CustomIconButton(iconName: 'google'),
+                                CustomIconButton(iconName: 'apple_logo'),
+                                CustomIconButton(iconName: 'microsoft'),
                               ],
                             ),
 
@@ -255,9 +283,15 @@ class _TelaCadastroState extends State<TelaCadastro> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text('Já tem uma conta?', style: tNormal),
-                                GestureDetector(onTap: () {
-                                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const TelaLogin()));
-                                }, child: Text('Faça o Login', style: tTituloPequeno)),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => const LoginScreen()));
+                                  },
+                                  child: Text(
+                                    'Faça o Login',
+                                    style: tSmallTitle,
+                                  ),
+                                ),
                               ],
                             ),
                           ],

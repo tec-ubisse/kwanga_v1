@@ -1,39 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/telas/tela_cadastro.dart';
-import 'package:kwanga/telas/tela_principal.dart';
+import 'package:kwanga/screens//login_screens/register_screen.dart';
+import 'package:kwanga/screens//purpose_screens/read_purposes.dart';
+import 'package:kwanga/custom_themes//blue_accent_theme.dart';
+import 'package:kwanga/screens/main_screen.dart';
+import 'package:kwanga/widgets/buttons//icon_button.dart';
+import 'package:kwanga/widgets/buttons//main_button.dart';
+import 'package:kwanga/data/purposes.dart';
 
-import 'package:kwanga/temas/foco_sereno.dart';
-import 'package:kwanga/widgets/botoes/botao_icone.dart';
-import 'package:kwanga/widgets/botoes/botao_principal.dart';
+import '../../custom_themes//text_style.dart';
+import '../../domain/usecases/auth_usecases.dart';
 
-import '../temas/texto.dart';
-
-class TelaLogin extends StatefulWidget {
-  const TelaLogin({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<TelaLogin> createState() => _TelaLoginState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _TelaLoginState extends State<TelaLogin> {
-  bool _aceitoTermos = false;
+class _LoginScreenState extends State<LoginScreen> {
+  final AuthUseCases _auth = AuthUseCases();
+  bool _loading = false;
 
-  void _alteraTermos() {
+  Future<void>_login() async {
+    setState(() => _loading = true);
+    print('$email - $password');
+    final success = await _auth.loginUser(
+      email, password
+    );
+    setState(() => _loading = false);
+
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Credenciais inválidas')));
+    }
+  }
+
+  bool acceptTerms = false;
+
+  void alteraTermos() {
     setState(() {
-      _aceitoTermos = !_aceitoTermos;
+      acceptTerms = !acceptTerms;
     });
   }
 
   // variáveis de controle para validação
   final _formKey = GlobalKey<FormState>();
-  var _email = '';
-  var _senha = '';
+  String email = '';
+  String password = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: cPrincipal,
+      backgroundColor: cMainColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -49,17 +74,17 @@ class _TelaLoginState extends State<TelaLogin> {
                     const Spacer(),
                     Column(
                       children: [
-                        Text('Login', style: tTitulo),
+                        Text('Login', style: tTitle),
                         Text(
                           'Bem-vindo de volta!',
-                          style: tNormal.copyWith(color: cBranco),
+                          style: tNormal.copyWith(color: cWhiteColor),
                         ),
                       ],
                     ),
                     const Spacer(),
                     Container(
                       decoration: BoxDecoration(
-                        color: cBranco,
+                        color: cWhiteColor,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(24.0),
                           topRight: Radius.circular(24.0),
@@ -81,14 +106,16 @@ class _TelaLoginState extends State<TelaLogin> {
                                     decoration: InputDecoration(
                                       label: Text('Email'),
                                       enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(color: cPreto),
+                                        borderSide: BorderSide(
+                                          color: cBlackColor,
+                                        ),
                                         borderRadius: BorderRadius.circular(
                                           12.0,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: cSecundaria,
+                                          color: cSecondaryColor,
                                           width: 2.0,
                                         ),
                                         borderRadius: BorderRadius.circular(
@@ -110,8 +137,9 @@ class _TelaLoginState extends State<TelaLogin> {
                                       }
                                       return null;
                                     },
-                                    onSaved: (value) {
-                                      _email = value!;
+                                    onChanged: (value) {
+                                      email = value;
+                                      print(email);
                                     },
                                   ),
 
@@ -123,14 +151,16 @@ class _TelaLoginState extends State<TelaLogin> {
                                       label: Text('Senha'),
                                       labelStyle: tNormal,
                                       enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(color: cPreto),
+                                        borderSide: BorderSide(
+                                          color: cBlackColor,
+                                        ),
                                         borderRadius: BorderRadius.circular(
                                           12.0,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: cSecundaria,
+                                          color: cSecondaryColor,
                                           width: 2.0,
                                         ),
                                         borderRadius: BorderRadius.circular(
@@ -142,22 +172,21 @@ class _TelaLoginState extends State<TelaLogin> {
                                       if (value == null || value.isEmpty) {
                                         return 'Este campo não pode estar vazio';
                                       }
+                                      return null;
                                     },
-                                    onSaved: (value) {
-                                      _senha = value!;
+                                    onChanged: (value) {
+                                      password = value;
+                                      print(password);
                                     },
                                   ),
 
                                   GestureDetector(
-                                    child: BotaoPrincipal(texto: 'Entrar'),
-                                    onTap: () {
-                                      Navigator.of(context).pushReplacement(
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const TelaPrincipal(),
-                                        ),
-                                      );
+                                    onTap: (){
+                                      if(_formKey.currentState!.validate()) {
+                                        _login();
+                                      }
                                     },
+                                    child: MainButton(buttonText: 'Entrar'),
                                   ),
                                 ],
                               ),
@@ -170,7 +199,7 @@ class _TelaLoginState extends State<TelaLogin> {
                               children: [
                                 Expanded(
                                   child: Divider(
-                                    color: cPreto,
+                                    color: cBlackColor,
                                     thickness: 1,
                                     endIndent:
                                         10, // espaço entre a linha e o texto
@@ -179,7 +208,7 @@ class _TelaLoginState extends State<TelaLogin> {
                                 Text('ou entre com', style: tNormal),
                                 Expanded(
                                   child: Divider(
-                                    color: cPreto,
+                                    color: cBlackColor,
                                     thickness: 1,
                                     indent:
                                         10, // espaço entre o texto e a linha
@@ -193,9 +222,9 @@ class _TelaLoginState extends State<TelaLogin> {
                               spacing: 8.0,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                BotaoIcone(nome_icone: 'google'),
-                                BotaoIcone(nome_icone: 'apple_logo'),
-                                BotaoIcone(nome_icone: 'microsoft'),
+                                CustomIconButton(iconName: 'google'),
+                                CustomIconButton(iconName: 'apple_logo'),
+                                CustomIconButton(iconName: 'microsoft'),
                               ],
                             ),
 
@@ -210,13 +239,13 @@ class _TelaLoginState extends State<TelaLogin> {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
-                                            const TelaCadastro(),
+                                            const RegisterScreen(),
                                       ),
                                     );
                                   },
                                   child: Text(
                                     'Registe-se aqui',
-                                    style: tTituloPequeno,
+                                    style: tSmallTitle,
                                   ),
                                 ),
                               ],

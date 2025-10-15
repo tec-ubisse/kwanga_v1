@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/temas/foco_sereno.dart';
+import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 
-class BotaoIcone extends StatelessWidget {
-  final String nome_icone;
-  const BotaoIcone({super.key, required this.nome_icone});
+class CustomIconButton extends StatelessWidget {
+  final String iconName;
+  const CustomIconButton({super.key, required this.iconName});
 
   @override
   Widget build(BuildContext context) {
@@ -13,14 +13,14 @@ class BotaoIcone extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
         border: Border.all(
-          color: cPreto,
+          color: cBlackColor,
           style: BorderStyle.solid,
           width: 1.0,
         )
       ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: Image.asset('assets/icons/$nome_icone.png', width: 24.0,),
+        child: Image.asset('assets/icons/$iconName.png', width: 24.0,),
       ),
     );
   }

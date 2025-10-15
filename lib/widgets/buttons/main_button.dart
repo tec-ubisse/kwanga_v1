@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/temas/foco_sereno.dart';
-import 'package:kwanga/temas/texto.dart';
+import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
 
-class BotaoPrincipal extends StatelessWidget {
-  final String texto;
-  const BotaoPrincipal({super.key, required this.texto});
+class MainButton extends StatelessWidget {
+  final String buttonText;
+  const MainButton({super.key, required this.buttonText});
 
   @override
   Widget build(BuildContext context) {
@@ -12,11 +12,11 @@ class BotaoPrincipal extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
-        color: cPrincipal
+        color: cMainColor
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 15.0),
-        child: Center(child: Text(texto, style: tBotao,),),
+        child: Center(child: Text(buttonText, style: tButtonText,),),
       ),
     );
   }
