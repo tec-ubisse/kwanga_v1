@@ -23,13 +23,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void>_login() async {
     setState(() => _loading = true);
-    print('$email - $password');
     final success = await _auth.loginUser(
       email, password
     );
     setState(() => _loading = false);
 
     if (success) {
+      print(success.toString());
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),

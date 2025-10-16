@@ -1,9 +1,13 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
+import 'package:kwanga/data/database/life_area_dao.dart';
 import 'package:kwanga/data/database/long_term_vision_dao.dart';
 import 'package:kwanga/data/life_areas.dart';
 import 'package:kwanga/screens/long_term_vision/create_long_term_vision.dart';
+import 'package:kwanga/widgets/buttons/icon_button.dart';
+import '../../models/life_area_model.dart';
 import '../../models/long_term_vision_model.dart';
 
 class LongTermVisionsScreen extends StatefulWidget {
@@ -14,44 +18,34 @@ class LongTermVisionsScreen extends StatefulWidget {
 }
 
 class _LongTermVisionsScreenState extends State<LongTermVisionsScreen> {
-  final List<Color> _colors = [
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.teal,
-    Colors.indigo,
-    Colors.lime,
-    Colors.cyan,
-    Colors.amber,
-  ];
+  final Random _random = Random();
+
+  Color _randomColor() {
+    return Color.fromARGB(255, _random.nextInt(150), _random.nextInt(150), 250);
+  }
 
   final LongTermVisionDao _longTermVisionDao = LongTermVisionDao();
+  final LifeAreaDao _lifeAreaDao = LifeAreaDao();
   late Future<List<LongTermVision>> _visionsFuture;
+  late Future<List<LifeArea>> _lifeAreas;
 
   @override
   void initState() {
     super.initState();
+    _loadLifeAreas();
     _loadVisions();
   }
 
-  // Lê as visões da base de dados
   void _loadVisions() {
     setState(() {
       _visionsFuture = _longTermVisionDao.getAll();
     });
   }
 
-  // Adiciona nova visão
-  Future<void> _addVision() async {
-    final newVision = await Navigator.push<LongTermVision>(
-      context,
-      MaterialPageRoute(builder: (_) => const CreateLongTermVision()),
-    );
-
-    if (newVision != null) {
-      await _longTermVisionDao.insert(newVision);
-      _loadVisions();
-    }
+  void _loadLifeAreas() {
+    setState(() {
+      _lifeAreas = _lifeAreaDao.getAll();
+    });
   }
 
   @override
@@ -62,93 +56,206 @@ class _LongTermVisionsScreenState extends State<LongTermVisionsScreen> {
         foregroundColor: cWhiteColor,
         title: Text('Visão de Longo Prazo', style: tTitle),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addVision,
-        backgroundColor: cMainColor,
-        foregroundColor: cWhiteColor,
-        child: const Icon(Icons.add),
-      ),
-      body: FutureBuilder<List<LongTermVision>>(
+      body: FutureBuilder(
         future: _visionsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+        builder: (builder, visionSnapshot) {
+          if (visionSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                backgroundColor: cMainColor,
+                color: cSecondaryColor,
+              ),
+            );
           }
 
-          if (snapshot.hasError) {
+          if (visionSnapshot.hasError) {
             return Center(
               child: Text(
-                'Erro ao carregar visões: ${snapshot.error}',
-                style: tNormal.copyWith(color: Colors.red),
+                'Erro ao carregar visões: ${visionSnapshot.error}',
+                style: tNormal.copyWith(color: cTertiaryColor),
                 textAlign: TextAlign.center,
               ),
             );
           }
 
-          final visions = snapshot.data ?? [];
+          final visions = visionSnapshot.data ?? [];
 
-          return GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 5 / 6,
-            ),
-            padding: const EdgeInsets.all(24),
-            itemCount: initialLifeAreas.length,
-            itemBuilder: (context, index) {
-              final area = initialLifeAreas[index];
+          return Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: ListView.builder(
+              itemCount: initialLifeAreas.length,
+              itemBuilder: (BuildContext context, int index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: FutureBuilder(
+                    future: _visionsFuture,
+                    builder: (context, visionSnapshot) {
+                      if (visionSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            backgroundColor: cMainColor,
+                            color: cSecondaryColor,
+                          ),
+                        );
+                      }
 
-              // encontra visão (ou null se não existir)
-              final vision = visions.where((v) => v.lifeArea.id == area.id).isNotEmpty
-                  ? visions.firstWhere((v) => v.lifeArea.id == area.id)
-                  : null;
+                      // displays error message in case anything goes wrong
+                      if (visionSnapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'Erro ao carregar visões: ${visionSnapshot.error}',
+                            style: tNormal.copyWith(color: cTertiaryColor),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
 
-              return Container(
-                alignment: Alignment.topLeft,
-                decoration: BoxDecoration(
-                  color: const Color(0xffF2F2F2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      List<LongTermVision> filteredVisions = visions
+                          .where(
+                            (vision) =>
+                                vision.lifeArea == initialLifeAreas[index],
+                          )
+                          .toList();
+
+                      Color currentColor = _randomColor();
+
+                      return Column(
                         children: [
-                          Image.asset(
-                            'assets/icons/${area.iconPath}.png',
-                            width: 24.0,
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            area.designation,
-                            style: tSmallTitle.copyWith(color: _colors[index]),
-                            textAlign: TextAlign.start,
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            vision?.designation ?? 'Sem visão definida',
-                            style: tNormal.copyWith(
-                              color: vision == null ? Colors.grey : Colors.black,
+                          // Title
+                          Container(
+                            decoration: BoxDecoration(
+                              color: currentColor,
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                spacing: 16.0,
+                                children: [
+                                  Image.asset(
+                                    'assets/icons/${initialLifeAreas[index].iconPath}.png',
+                                    width: 32.0,
+                                  ),
+                                  Text(
+                                    initialLifeAreas[index].designation,
+                                    style: tSmallTitle.copyWith(
+                                      color: cWhiteColor,
+                                    ),
+                                  ),
+
+                                  const Spacer(),
+
+                                  // Add button
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (ctx) =>
+                                              CreateLongTermVision(
+                                                selectedArea:
+                                                    initialLifeAreas[index],
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 40.0,
+                                      height: 40.0,
+                                      decoration: BoxDecoration(
+                                        color: cWhiteColor,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            blurRadius: 1.0,
+                                            spreadRadius: 1.0,
+                                            color: cBlackColor,
+                                            offset: Offset(2, 2),
+                                          ),
+                                        ],
+                                        borderRadius: BorderRadius.circular(
+                                          12.0,
+                                        ),
+                                      ),
+                                      child: Icon(Icons.add, color: cMainColor),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          if (filteredVisions.isEmpty)
+                            Container(
+                              height: 100.0,
+                              margin: const EdgeInsets.only(top: 8.0),
+                              decoration: BoxDecoration(
+                                color: currentColor.withAlpha(10),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24.0,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Ainda não tem visão ${initialLifeAreas[index].designation}',
+                                          style: tTitle.copyWith(
+                                            color: cBlackColor,
+                                            fontSize: 16.0,
+                                          ),
+                                        ),
+                                        Text('Clique para adicionar'),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            ...filteredVisions.map((vision) {
+                              return Container(
+                                margin: const EdgeInsets.only(top: 8.0),
+                                decoration: BoxDecoration(
+                                  color: currentColor.withAlpha(10),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      vision.designation,
+                                      style: tNormal.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: currentColor,
+                                      ),
+                                    ), // [cite: 37]
+                                    Text(
+                                      'Prazo: ${vision.deadline}',
+                                      style: tSmallTitle.copyWith(
+                                        color: currentColor.withOpacity(0.8),
+                                      ),
+                                    ), // [cite: 36]
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                         ],
-                      ),
-                      Text(
-                        vision?.deadline ?? 'Sem prazo definido',
-                        style: tNormal.copyWith(
-                          color: vision == null ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
