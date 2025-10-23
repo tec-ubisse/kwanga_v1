@@ -1,7 +1,11 @@
-class User {
-  String id;
+class UserModel {
+  int? id;       // gerado automaticamente pelo SQLite
   String email;
   String password;
 
-  User(this.id, this.email, this.password);
+  UserModel({
+    this.id,
+    required this.email,
+    required this.password,
+  });
 }

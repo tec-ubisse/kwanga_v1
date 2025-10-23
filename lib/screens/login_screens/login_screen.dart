@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:kwanga/screens//login_screens/register_screen.dart';
 import 'package:kwanga/screens//purpose_screens/read_purposes.dart';
 import 'package:kwanga/custom_themes//blue_accent_theme.dart';
+import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
 import 'package:kwanga/screens/main_screen.dart';
+import 'package:kwanga/screens/task_screens/task_screen.dart';
 import 'package:kwanga/widgets/buttons//icon_button.dart';
 import 'package:kwanga/widgets/buttons//main_button.dart';
 import 'package:kwanga/data/purposes.dart';
@@ -32,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
       print(success.toString());
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => const CreateListsScreen()),
       );
     } else {
       ScaffoldMessenger.of(
@@ -139,7 +141,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                     onChanged: (value) {
                                       email = value;
-                                      print(email);
                                     },
                                   ),
 

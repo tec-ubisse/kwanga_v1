@@ -4,6 +4,7 @@ import 'package:kwanga/models/life_area_model.dart';
 import 'package:kwanga/screens/life_area_screens/create_life_area_screen.dart';
 import '../../custom_themes/blue_accent_theme.dart';
 import '../../custom_themes/text_style.dart';
+import '../../widgets/custom_drawer.dart';
 import '../main_screen.dart';
 
 class ReadLifeAreasScreen extends StatelessWidget {
@@ -17,25 +18,12 @@ class ReadLifeAreasScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
-        title: Row(
-          spacing: 8.0,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MainScreen()),
-                );
-              },
-              child: const Icon(Icons.arrow_back),
-            ),
-            Text(
-              'Áreas da vida',
-              style: tTitle.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ],
+        title: Text(
+          'Áreas da vida',
+          style: tTitle.copyWith(fontWeight: FontWeight.w500),
         ),
       ),
+      drawer: CustomDrawer(),
       body: Padding(
         padding: defaultPadding,
         child: GridView.builder(

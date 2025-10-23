@@ -22,7 +22,7 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
-    final res = await _api.get('user', auth: true);
+    final res = await _api.get('users/user', auth: true);
     if (res.statusCode == 200) {
       return jsonDecode(res.body);
     }
@@ -34,7 +34,9 @@ class AuthRepository {
   }
 
   Future<bool>verifyEmail(String email, String code) async {
-    final res = await _api.post('auth/verify-email', {'email': email, 'code': code});
+    final res = await _api.post('auth/verify_email', {'email': email, 'code': code});
     return res.statusCode == 200;
   }
+
+
 }

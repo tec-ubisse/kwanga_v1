@@ -7,6 +7,7 @@ import 'package:kwanga/models/purpose_model.dart';
 import 'package:kwanga/screens/main_screen.dart';
 import 'package:kwanga/screens/purpose_screens/create_purpose.dart';
 import 'package:kwanga/screens/purpose_screens/edit_purpose.dart';
+import 'package:kwanga/widgets/custom_drawer.dart';
 import 'package:kwanga/widgets/purpose_widget.dart';
 
 class ReadPurposes extends StatefulWidget {
@@ -102,25 +103,12 @@ class _ReadPurposesState extends State<ReadPurposes> {
       appBar: AppBar(
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
-        title: Row(
-          spacing: 8.0,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MainScreen()),
-                );
-              },
-              child: const Icon(Icons.arrow_back),
-            ),
-            Text(
-              'Propósitos',
-              style: tTitle.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ],
+        title: Text(
+          'Propósitos',
+          style: tTitle.copyWith(fontWeight: FontWeight.w500),
         ),
       ),
+      drawer: CustomDrawer(),
       backgroundColor: cWhiteColor,
       body: FutureBuilder<List<Purpose>>(
         future: _purposesFuture,

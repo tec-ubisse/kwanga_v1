@@ -20,8 +20,18 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 4,
       onCreate: (db, version) async {
+
+        // Create Users table
+        await db.execute('''
+          CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+          )
+        ''');
+
         // Create Life Areas table
         await db.execute('''
           CREATE TABLE life_areas (
@@ -75,6 +85,33 @@ class DatabaseHelper {
           FOREIGN KEY (life_area_id) REFERENCES life_areas(id) ON DELETE CASCADE
         )
       ''');
+
+        // Create Lists table
+        await db.execute('''
+          CREATE TABLE lists (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            list_type TEXT NOT NULL,
+            description TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          )
+        ''');
+
+        // Create table tasks
+        await db.execute('''
+          CREATE TABLE tasks (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            list_id TEXT NOT NULL,
+            description TEXT NOT NULL,
+            listType TEXT NOT NULL,
+            deadline INTEGER,
+            time INTEGER,
+            frequency TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
+          )
+        ''');
       },
     );
   }

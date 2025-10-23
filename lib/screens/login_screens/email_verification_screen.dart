@@ -22,6 +22,7 @@ class _EmailVerificationState extends State<EmailVerification> {
   Future<void> verifyEmail(String email, String code) async {
     final AuthUseCases _auth = AuthUseCases();
     final success = await _auth.verifyEmail(email, code);
+
     if (success) {
       Navigator.pushReplacement(
         context,
