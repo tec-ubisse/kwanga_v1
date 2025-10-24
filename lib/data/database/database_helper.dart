@@ -108,6 +108,7 @@ class DatabaseHelper {
             deadline INTEGER,
             time INTEGER,
             frequency TEXT,
+            completed INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
           )

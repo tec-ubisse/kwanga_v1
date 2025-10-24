@@ -23,7 +23,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
-      home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
+      // home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
+      home: const TaskScreen(),
     );
   }
 }

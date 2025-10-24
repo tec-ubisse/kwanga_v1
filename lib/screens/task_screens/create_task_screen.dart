@@ -3,6 +3,7 @@ import 'package:kwanga/data/database/task_dao.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/models/user.dart';
+import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import '../../custom_themes/blue_accent_theme.dart';
@@ -43,11 +44,40 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     setState(() {
       _selectedOption = option;
       _selectedDate = null;
+      updateSelectedDate(option);
+      print(_selectedDate);
     });
+  }
+
+  void updateSelectedDate(String newOption) {
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+
+    switch (newOption) {
+      case 'Sem data':
+        _selectedDate = null;
+        break;
+
+      case 'Hoje':
+        _selectedDate = today;
+        break;
+
+      case 'Amanhã':
+        _selectedDate = today.add(const Duration(days: 1));
+        break;
+
+      case 'Data específica':
+        break;
+
+      default:
+        _selectedDate = null;
+        break;
+    }
   }
 
   void saveTask() async {
     if (_formKey.currentState!.validate()) {
+      final now = DateTime.now();
       final newTask = TaskModel(
         description: _taskDescription,
         listType: _selectedList!.description,
@@ -55,6 +85,15 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         deadline: _selectedDate,
         frequency: [],
         userId: _userModel.id!,
+        time: _selectedTime == null
+            ? null
+            : DateTime(
+          now.year,
+          now.month,
+          now.day,
+          _selectedTime!.hour,
+          _selectedTime!.minute,
+        ),
       );
       await _taskDao.insert(newTask);
 
@@ -66,13 +105,15 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay initialTime = _selectedTime ?? TimeOfDay.now();
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
     );
-    if (picked != null && picked != _selectedTime) {
+    if (picked != null) {
       setState(() {
         _selectedTime = picked;
+
       });
     }
   }
@@ -138,7 +179,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     );
   }
 
-  ListModel? _selectedList; // item selecionado
+  ListModel? _selectedList;
 
   void loadLists() {
     setState(() {
@@ -197,7 +238,20 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             }
 
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('Nenhuma lista encontrada.'));
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Nenhuma lista encontrada.'),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(
+                        context,
+                      ).push(MaterialPageRoute(builder: (ctx) => CreateListsScreen()));
+                    },
+                    child: MainButton(buttonText: 'Criar Lista de Tarefas'),
+                  ),
+                ],
+              );
             }
 
             final lists = snapshot.data!;
@@ -254,59 +308,59 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _options.map((option) {
-                                final bool isSelected =
-                                    _selectedOption == option;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 6.0,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Switch(
-                                            value: isSelected,
-                                            onChanged: (_) =>
-                                                _onOptionChanged(option),
-                                            activeThumbColor:
-                                                Colors.blue.shade700,
-                                            activeTrackColor:
-                                                Colors.blue.shade100,
-                                            inactiveThumbColor:
-                                                Colors.grey.shade300,
-                                            inactiveTrackColor:
-                                                Colors.grey.shade200,
-                                            splashRadius: 0,
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _options.map((option) {
+                              final bool isSelected =
+                                  _selectedOption == option;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6.0,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Switch(
+                                          value: isSelected,
+                                          onChanged: (_) {
+                                            _onOptionChanged(option);
+                                          }
+                                              ,
+                                          activeThumbColor:
+                                              Colors.blue.shade700,
+                                          activeTrackColor:
+                                              Colors.blue.shade100,
+                                          inactiveThumbColor:
+                                              Colors.grey.shade300,
+                                          inactiveTrackColor:
+                                              Colors.grey.shade200,
+                                          splashRadius: 0,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize
+                                                  .shrinkWrap,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          option,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: isSelected
+                                                ? Colors.black
+                                                : Colors.grey.shade700,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            option,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: isSelected
-                                                  ? Colors.black
-                                                  : Colors.grey.shade700,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),

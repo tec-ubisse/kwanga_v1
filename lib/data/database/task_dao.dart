@@ -16,10 +16,10 @@ class TaskDao {
       'listType': task.listType,
       'deadline': task.deadline != null
           ? DateTime(
-              task.deadline!.year,
-              task.deadline!.month,
-              task.deadline!.day,
-            ).millisecondsSinceEpoch
+        task.deadline!.year,
+        task.deadline!.month,
+        task.deadline!.day,
+      ).millisecondsSinceEpoch
           : null,
       'time': task.time != null
           ? task.time!.hour * 60 * 60 * 1000 + task.time!.minute * 60 * 1000
@@ -48,31 +48,30 @@ class TaskDao {
       {
         'description': task.description,
         'listType': task.listType,
-        'deadline': task.deadline != null
-            ? DateTime(
-                task.deadline!.year,
-                task.deadline!.month,
-                task.deadline!.day,
-              ).millisecondsSinceEpoch
-            : null,
-        'time': task.time != null
-            ? task.time!.hour * 60 * 60 * 1000 + task.time!.minute * 60 * 1000
-            : null,
+        'deadline': task.deadline?.millisecondsSinceEpoch,
+        'time': task.time?.millisecondsSinceEpoch,
         'frequency': task.frequency != null ? jsonEncode(task.frequency) : null,
+        'completed': task.completed ? 1 : 0,
       },
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [task.id, task.userId],
+      where: 'id = ?',
+      whereArgs: [task.id],
+    );
+  }
+
+  Future<int> updateTaskStatus(TaskModel task, int status) async {
+    final db = await databaseHelper.database;
+    return await db.update(
+      'tasks',
+      {'completed':  status},
+      where: 'id = ?',
+      whereArgs: [task.id],
     );
   }
 
   // DELETE
-  Future<int> deleteTask(String id, int userId) async {
+  Future<int> deleteTask(String id) async {
     final db = await databaseHelper.database;
-    return await db.delete(
-      'tasks',
-      where: 'id = ? AND user_id = ?',
-      whereArgs: [id, userId],
-    );
+    return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
   // ---------------------------
