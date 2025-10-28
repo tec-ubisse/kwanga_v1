@@ -3,8 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
 import 'package:kwanga/screens/main_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
-import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
-import 'package:kwanga/screens/tela_tarefas/tela_tarefas.dart';
 import 'package:kwanga/utils/secure_storage.dart';
 
 void main() async {
@@ -25,8 +23,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
-      home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
-      // home: const TaskTrailingScreen(),
+      // home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
+      home: const TaskScreen(),
     );
   }
 }

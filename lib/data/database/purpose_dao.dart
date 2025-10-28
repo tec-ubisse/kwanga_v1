@@ -61,7 +61,7 @@ class PurposeDao {
         LifeArea(
           e['designation'] as String,
           e['icon_path'] as String,
-          e['id'] as int,
+          e['id'] as String,
         ),e['id'] as int
       ),
     )

@@ -171,7 +171,7 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                           'Versão',
                           style: tSmallTitle.copyWith(color: cBlackColor),
                         ),
-                        Text('1.9   ', style: tNormal),
+                        Text('1.7   ', style: tNormal),
                       ],
                     ),
                     const Divider(),

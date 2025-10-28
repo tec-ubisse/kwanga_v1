@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import 'package:kwanga/data/database/life_area_dao.dart';
 import 'package:kwanga/data/life_areas.dart';
 import 'package:kwanga/models/life_area_model.dart';
 import 'package:kwanga/screens/life_area_screens/read_life_areas_screen.dart';
+import 'package:kwanga/utils/current_user.dart';
+import 'package:uuid/uuid.dart';
 import '../../custom_themes/text_style.dart';
 import '../../widgets/buttons/main_button.dart';
 
@@ -15,13 +18,25 @@ class CreateLifeAreaScreen extends StatefulWidget {
 
 class _CreateLifeAreaScreenState extends State<CreateLifeAreaScreen> {
   TextEditingController? _textEditingController;
+  final _uuid = Uuid();
+  final LifeAreaDao _lifeAreaDao = LifeAreaDao();
   String _enteredDescription = '';
   int? _selectedIconIndex;
+  bool _isSaving = false;
+  int? _userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _textEditingController = TextEditingController();
+  }
+
+  Future<void> _loadUserId() async {
+    final id = await CurrentUser.getUserId();
+    setState(() {
+      _userId = id;
+    });
   }
 
   @override
@@ -29,6 +44,66 @@ class _CreateLifeAreaScreenState extends State<CreateLifeAreaScreen> {
     _textEditingController!.dispose();
     super.dispose();
   }
+
+  Future<void> _saveLifeArea() async{
+    if (_enteredDescription.isEmpty ||
+        _selectedIconIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Digite a área da vida e selecione um ícone',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final selectedIcon = initialLifeAreas[_selectedIconIndex!].iconPath;
+
+    final newLifeArea = LifeArea(
+      _enteredDescription,
+      selectedIcon,
+      _uuid.v4(),
+      userId: _userId!,
+      isDefault: false,
+      isSynced: false,
+      isDeleted: false,
+    );
+
+    try {
+      await _lifeAreaDao.insert(newLifeArea, _userId!);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Área da vida adicionada com sucesso!')),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (ctx) => const ReadLifeAreasScreen()),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) =>
+              ReadLifeAreasScreen(),
+        ),
+      );
+    }catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+
+    }
+
 
   @override
   Widget build(BuildContext context) {
@@ -115,38 +190,9 @@ class _CreateLifeAreaScreenState extends State<CreateLifeAreaScreen> {
                       const Spacer(),
                       GestureDetector(
                         onTap: () {
-                          if (_enteredDescription.isEmpty ||
-                              _selectedIconIndex == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Digite a área da vida e selecione um ícone',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          // Criar novo objeto LifeArea
-                          final newLifeArea = LifeArea(
-                            _enteredDescription,
-                            initialLifeAreas[_selectedIconIndex!].iconPath,
-                            1
-                          );
-
-                          // Add new Life Area
-                          initialLifeAreas.add(newLifeArea);
-
-                          // Navigate to LifeAreas page
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) =>
-                                  ReadLifeAreasScreen(lifeAreas: initialLifeAreas),
-                            ),
-                          );
+                          if (!_isSaving) _saveLifeArea();
                         },
-                        child: const MainButton(buttonText: 'Salvar'),
+                        child: MainButton(buttonText: _isSaving ? 'Salvando...' : 'Salvar'),
                       ),
                     ],
                   ),

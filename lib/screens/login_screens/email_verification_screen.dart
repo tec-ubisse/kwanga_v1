@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kwanga/screens/login_screens/register_screen.dart';
 import 'package:kwanga/screens/main_screen.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
-import '../../custom_themes//blue_accent_theme.dart';
+import '../../custom_themes/blue_accent_theme.dart';
 import '../../custom_themes/text_style.dart';
 import '../../domain/usecases/auth_usecases.dart';
 
