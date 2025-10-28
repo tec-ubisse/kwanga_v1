@@ -5,6 +5,7 @@ import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/models/user.dart';
 import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
+import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import '../../custom_themes/blue_accent_theme.dart';
 import '../../custom_themes/text_style.dart';
@@ -88,19 +89,20 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         time: _selectedTime == null
             ? null
             : DateTime(
-          now.year,
-          now.month,
-          now.day,
-          _selectedTime!.hour,
-          _selectedTime!.minute,
-        ),
+                now.year,
+                now.month,
+                now.day,
+                _selectedTime!.hour,
+                _selectedTime!.minute,
+              ),
+        completed: 0,
       );
       await _taskDao.insert(newTask);
 
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => TaskScreen()));
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (ctx) => TaskTrailingScreen()),
+      );
     }
   }
 
@@ -113,7 +115,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     if (picked != null) {
       setState(() {
         _selectedTime = picked;
-
       });
     }
   }
@@ -219,223 +220,237 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         foregroundColor: cWhiteColor,
         title: const Text('Adicionar Tarefa'),
       ),
-      body: Padding(
-        padding: defaultPadding,
-        child: FutureBuilder<List<ListModel>>(
-          future: _listsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: defaultPadding,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height -
+                kToolbarHeight -
+                MediaQuery.of(context).padding.top,),
+            child: IntrinsicHeight(
+              child: FutureBuilder<List<ListModel>>(
+                future: _listsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Erro ao carregar listas: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Nenhuma lista encontrada.'),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(
-                        context,
-                      ).push(MaterialPageRoute(builder: (ctx) => CreateListsScreen()));
-                    },
-                    child: MainButton(buttonText: 'Criar Lista de Tarefas'),
-                  ),
-                ],
-              );
-            }
-
-            final lists = snapshot.data!;
-
-            return Form(
-              key: _formKey,
-              child: Column(
-                spacing: 12.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Descrição', style: tNormal),
-                  TextFormField(
-                    decoration: inputDecoration,
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Deve conter a descrição da lista';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      _taskDescription = value;
-                    },
-                  ),
-                  Text('Selecione uma lista:', style: tNormal),
-                  DropdownButtonFormField<ListModel>(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Erro ao carregar listas: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red),
                       ),
-                    ),
-                    isExpanded: true,
-                    hint: Text('Escolha uma lista', style: tNormal),
-                    initialValue: _selectedList,
-                    items: lists.map((list) {
-                      return DropdownMenuItem<ListModel>(
-                        value: list,
-                        child: Text(list.description, style: tNormal),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedList = value;
-                      });
-                    },
-                  ),
-                  // Sem Data, Hoje ou Amanhã
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade800.withAlpha(10),
-                          borderRadius: BorderRadius.circular(12.0),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Nenhuma lista encontrada.'),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) => CreateListsScreen(),
+                              ),
+                            );
+                          },
+                          child: MainButton(
+                            buttonText: 'Criar Lista de Tarefas',
+                          ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _options.map((option) {
-                              final bool isSelected =
-                                  _selectedOption == option;
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 6.0,
-                                ),
+                      ],
+                    );
+                  }
+
+                  final lists = snapshot.data!;
+
+                  return Form(
+                    key: _formKey,
+                    child: Column(
+                      spacing: 12.0,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Selecione uma lista:', style: tNormal),
+                        DropdownButtonFormField<ListModel>(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          isExpanded: true,
+                          hint: Text('Escolha uma lista', style: tNormal),
+                          initialValue: _selectedList,
+                          items: lists.map((list) {
+                            return DropdownMenuItem<ListModel>(
+                              value: list,
+                              child: Text(list.description, style: tNormal),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedList = value;
+                            });
+                          },
+                        ),
+                        Text('Descrição', style: tNormal),
+                        TextFormField(
+                          decoration: inputDecoration,
+                          maxLines: 3,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Deve conter a descrição da lista';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            _taskDescription = value;
+                          },
+                        ),
+
+                        // Sem Data, Hoje ou Amanhã
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade800.withAlpha(10),
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Switch(
-                                          value: isSelected,
-                                          onChanged: (_) {
-                                            _onOptionChanged(option);
-                                          }
-                                              ,
-                                          activeThumbColor:
-                                              Colors.blue.shade700,
-                                          activeTrackColor:
-                                              Colors.blue.shade100,
-                                          inactiveThumbColor:
-                                              Colors.grey.shade300,
-                                          inactiveTrackColor:
-                                              Colors.grey.shade200,
-                                          splashRadius: 0,
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize
-                                                  .shrinkWrap,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          option,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: isSelected
-                                                ? Colors.black
-                                                : Colors.grey.shade700,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.normal,
+                                  children: _options.map((option) {
+                                    final bool isSelected =
+                                        _selectedOption == option;
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6.0,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Switch(
+                                                value: isSelected,
+                                                onChanged: (_) {
+                                                  _onOptionChanged(option);
+                                                },
+                                                activeThumbColor:
+                                                    Colors.blue.shade700,
+                                                activeTrackColor:
+                                                    Colors.blue.shade100,
+                                                inactiveThumbColor:
+                                                    Colors.grey.shade300,
+                                                inactiveTrackColor:
+                                                    Colors.grey.shade200,
+                                                splashRadius: 0,
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                option,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: isSelected
+                                                      ? Colors.black
+                                                      : Colors.grey.shade700,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w600
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                            Expanded(child: Text('')),
+                          ],
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _selectDate(context),
+                          child: Text('Selecione a Data'),
+                        ),
+                        Column(
+                          children: [
+                            _buildRow(
+                              label: 'Lembrete',
+                              value: _reminderEnabled,
+                              onChanged: (val) =>
+                                  setState(() => _reminderEnabled = val),
+                              trailing: InkWell(
+                                onTap: _reminderEnabled
+                                    ? () => _selectTime(context)
+                                    : null,
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.alarm,
+                                      size: 20,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _selectedTime.format(context),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Colors.grey,
                                     ),
                                   ],
                                 ),
-                              );
-                            }).toList(),
-                          ),
+                              ),
+                            ),
+                            _buildRow(
+                              label: 'Frequência',
+                              value: _frequencyEnabled,
+                              onChanged: (val) =>
+                                  setState(() => _frequencyEnabled = val),
+                              trailing: InkWell(
+                                onTap: _frequencyEnabled
+                                    ? () => _selectFrequency(context)
+                                    : null,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      _selectedFrequency,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Colors.grey,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Expanded(child: Text('')),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _selectDate(context),
-                    child: Text('Selecione a Data'),
-                  ),
-                  Column(
-                    children: [
-                      _buildRow(
-                        label: 'Lembrete',
-                        value: _reminderEnabled,
-                        onChanged: (val) =>
-                            setState(() => _reminderEnabled = val),
-                        trailing: InkWell(
-                          onTap: _reminderEnabled
-                              ? () => _selectTime(context)
-                              : null,
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.alarm,
-                                size: 20,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _selectedTime.format(context),
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: saveTask,
+                          child: MainButton(buttonText: 'Salvar'),
                         ),
-                      ),
-                      _buildRow(
-                        label: 'Frequência',
-                        value: _frequencyEnabled,
-                        onChanged: (val) =>
-                            setState(() => _frequencyEnabled = val),
-                        trailing: InkWell(
-                          onTap: _frequencyEnabled
-                              ? () => _selectFrequency(context)
-                              : null,
-                          child: Row(
-                            children: [
-                              Text(
-                                _selectedFrequency,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: saveTask,
-                    child: MainButton(buttonText: 'Salvar'),
-                  ),
-                ],
+                      ],
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

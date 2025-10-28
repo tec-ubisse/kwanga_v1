@@ -41,7 +41,7 @@ class ListDao {
   }
 
   // UPDATE
-  Future<int> update(ListModel list, int id) async {
+  Future<int> update(ListModel list, String id) async {
     final db = await databaseHelper.database;
     return await db.update(
       'lists',
@@ -52,7 +52,7 @@ class ListDao {
   }
 
   // DELETE
-  Future<int> delete(int id) async {
+  Future<int> delete(String id) async {
     final db = await databaseHelper.database;
     return await db.delete('lists', where: 'id = ?', whereArgs: [id]);
   }

@@ -33,7 +33,6 @@ class _CreateListsScreenState extends State<CreateListsScreen> {
   Future<void> getCurrentUser() async {
     final AuthUseCases _auth = AuthUseCases();
     final success = await _auth.getUserData();
-    print(success.toString());
   }
 
   void saveList() async {
@@ -67,71 +66,81 @@ class _CreateListsScreenState extends State<CreateListsScreen> {
         foregroundColor: cWhiteColor,
         title: Text('Adicionar Lista'),
       ),
-      body: Padding(
-        padding: defaultPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
-                spacing: 12.0,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Tipo de Lista', style: tNormal),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.0),
-                      border: Border.all(color: cBlackColor),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: _selectedListType,
-                        hint: const Text('Selecione um tipo de lista'),
-                        items: _listTypes.map((String listType) {
-                          return DropdownMenuItem<String>(
-                            value: listType,
-                            child: Text(listType, style: tNormal),
-                          );
-                        }).toList(),
-                        onChanged: (String? selectedListType) {
-                          setState(() {
-                            _selectedListType = selectedListType!;
-                          });
-                        },
+      body: SafeArea(
+      child: SingleChildScrollView(
+      padding: defaultPadding,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height -
+              kToolbarHeight -
+              MediaQuery.of(context).padding.top,
+        ),
+        child: IntrinsicHeight(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 12.0,
+                  children: [
+                    Text('Tipo de Lista', style: tNormal),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(color: cBlackColor),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedListType,
+                          hint: const Text('Selecione um tipo de lista'),
+                          items: _listTypes.map((String listType) {
+                            return DropdownMenuItem<String>(
+                              value: listType,
+                              child: Text(listType, style: tNormal),
+                            );
+                          }).toList(),
+                          onChanged: (String? selectedListType) {
+                            setState(() {
+                              _selectedListType = selectedListType!;
+                            });
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text('Descrição', style: tNormal),
-                  TextFormField(
-                    decoration: inputDecoration,
-                    maxLines: 5,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Deve conter a descrição da lista';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      _listDescription = value;
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 16.0),
+                    Text('Descrição', style: tNormal),
+                    TextFormField(
+                      decoration: inputDecoration,
+                      maxLines: 5,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Deve conter a descrição da lista';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        _listDescription = value;
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () {
-                saveList();
-              },
-              child: MainButton(buttonText: 'Salvar'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: saveList,
+                child: MainButton(buttonText: 'Salvar'),
+              ),
+            ],
+          ),
         ),
       ),
+    ),
+    ),
+
     );
   }
 }

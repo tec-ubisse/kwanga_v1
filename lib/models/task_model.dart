@@ -9,7 +9,7 @@ class TaskModel {
   DateTime? deadline;
   DateTime? time;
   List<String>? frequency;
-  bool completed;
+  int completed;
 
   static const _uuid = Uuid();
 
@@ -22,6 +22,6 @@ class TaskModel {
     this.deadline,
     this.time,
     this.frequency,
-    this.completed = false,
+    required this.completed,
   }) : id = id ?? _uuid.v4();
 }

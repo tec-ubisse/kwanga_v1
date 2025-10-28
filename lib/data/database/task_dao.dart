@@ -1,15 +1,17 @@
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/data/database/database_helper.dart';
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 
 class TaskDao {
   final databaseHelper = DatabaseHelper.instance;
+  static const _uuid = Uuid();
 
   // CREATE
   Future<void> insert(TaskModel task) async {
     final db = await databaseHelper.database;
     await db.insert('tasks', {
-      'id': task.id,
+      'id':  _uuid.v4(),
       'user_id': task.userId,
       'list_id': task.listId,
       'description': task.description,
@@ -25,6 +27,7 @@ class TaskDao {
           ? task.time!.hour * 60 * 60 * 1000 + task.time!.minute * 60 * 1000
           : null,
       'frequency': task.frequency != null ? jsonEncode(task.frequency) : null,
+      'completed': 0,
     });
   }
 
@@ -51,20 +54,20 @@ class TaskDao {
         'deadline': task.deadline?.millisecondsSinceEpoch,
         'time': task.time?.millisecondsSinceEpoch,
         'frequency': task.frequency != null ? jsonEncode(task.frequency) : null,
-        'completed': task.completed ? 1 : 0,
+        'completed': task.completed,
       },
       where: 'id = ?',
       whereArgs: [task.id],
     );
   }
 
-  Future<int> updateTaskStatus(TaskModel task, int status) async {
+  Future<int> updateTaskStatus(String taskId, int status) async {
     final db = await databaseHelper.database;
     return await db.update(
       'tasks',
       {'completed':  status},
       where: 'id = ?',
-      whereArgs: [task.id],
+      whereArgs: [taskId],
     );
   }
 
@@ -93,6 +96,7 @@ class TaskDao {
       frequency: row['frequency'] != null
           ? List<String>.from(jsonDecode(row['frequency'] as String))
           : null,
+      completed: row['completed'] as int,
     );
   }
 }

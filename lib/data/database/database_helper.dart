@@ -20,8 +20,16 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 1,
       onCreate: (db, version) async {
+        // Create test task table
+        await db.execute('''
+        CREATE TABLE tarefas (
+          id TEXT PRIMARY KEY,
+          content TEXT NOT NULL,
+          status INTEGER NOT NULL
+          )
+        ''');
 
         // Create Users table
         await db.execute('''
@@ -108,7 +116,7 @@ class DatabaseHelper {
             deadline INTEGER,
             time INTEGER,
             frequency TEXT,
-            completed INTEGER NOT NULL DEFAULT 0,
+            completed INTEGER NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
           )
