@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
+import 'package:kwanga/utils/current_user.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
 import '../main_screen.dart';
 
@@ -12,6 +13,33 @@ class ConfigurationsScreen extends StatefulWidget {
 }
 
 class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
+
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
+
+  Future<void> loadUserData() async {
+    setState(()=> isLoading = true);
+
+    final id = await CurrentUser.getUserId();
+    final email = await CurrentUser.getUserEmail();
+
+    setState(() {
+      userData = {
+        'id' : id,
+        'email' : email,
+      };
+      isLoading = false;
+
+    });
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +81,7 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                     CircleAvatar(
                       radius: 32.0,
                       backgroundColor: cSecondaryColor,
-                      child: Text('AU', style: tTitle),
+                      child: Text(userData != null ? userData!['email'].substring(0,2).toUpperCase() : 'KW', style: tTitle),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +90,7 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                           'Alberto Ubisse',
                           style: tSmallTitle.copyWith(color: cBlackColor),
                         ),
-                        Text('alberto.ubisse@techworks.co.mz', style: tNormal),
+                        Text(userData?['email'] ?? 'Carregando...', style: tNormal),
                       ],
                     ),
                   ],
@@ -82,8 +110,8 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                     ),
                     Container(
                       decoration: BoxDecoration(
-                        color: cMainColor.withAlpha(24),
-                        borderRadius: BorderRadius.circular(12.0)
+                          color: cMainColor.withAlpha(24),
+                          borderRadius: BorderRadius.circular(12.0)
                       ),
                       child: Padding(
                         padding: const EdgeInsets.only(left: 16.0),
@@ -97,8 +125,8 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                                   width: 16.0,
                                   height: 16.0,
                                   decoration: BoxDecoration(
-                                    color: cMainColor,
-                                    borderRadius: BorderRadius.circular(4.0)
+                                      color: cMainColor,
+                                      borderRadius: BorderRadius.circular(4.0)
                                   ),
                                 ),
                                 Text('Dark-Blue', style: tNormal),
@@ -171,7 +199,7 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                           'Versão',
                           style: tSmallTitle.copyWith(color: cBlackColor),
                         ),
-                        Text('1.7   ', style: tNormal),
+                        Text('1.2   ', style: tNormal),
                       ],
                     ),
                     const Divider(),
@@ -242,8 +270,10 @@ class _ConfigurationsScreenState extends State<ConfigurationsScreen> {
                 );
               },
               child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (ctx) => const LoginScreen()));
+                onTap: () async {
+
+                  await CurrentUser.clear();
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (ctx) => const LoginScreen()));
                 },
                 child: Row(
                   spacing: 8.0,

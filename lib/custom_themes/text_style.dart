@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/custom_themes//blue_accent_theme.dart';
+import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 
 final tTitle = TextStyle(
   color: cWhiteColor,

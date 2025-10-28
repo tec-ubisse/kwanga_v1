@@ -50,9 +50,7 @@ class CustomDrawer extends StatelessWidget {
                 DrawerTile(
                   tileName: 'Áreas da Vida',
                   tileImage: 'focus-64',
-                  navigateTo: ReadLifeAreasScreen(
-                    lifeAreas: initialLifeAreas,
-                  ),
+                  navigateTo: ReadLifeAreasScreen(),
                 ),
               ],
             ),

@@ -16,8 +16,8 @@ class AuthUseCases {
     return await _repo.getUserData();
   }
 
-  Future<void> logoutUser() async {
-    await _repo.logout();
+  Future<bool> logoutUser() async {
+    return await _repo.logout();
   }
 
   Future<bool> verifyEmail(String email, String code) async {

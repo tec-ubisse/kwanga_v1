@@ -1,5 +1,6 @@
 import 'package:kwanga/models/life_area_model.dart';
 import 'package:kwanga/models/purpose_model.dart';
+import 'package:uuid/uuid.dart';
 
 enum Area {
   emotion,
@@ -13,6 +14,9 @@ enum Area {
   career,
 }
 
+final _uuid = Uuid();
+
+
 List<Purpose> initialPurposes = [
   Purpose(
     "Contribuir com excelência, ética e"
@@ -20,6 +24,13 @@ List<Purpose> initialPurposes = [
     " soluções sustentáveis, promovendo "
     "impacto positivo na organização"
     "e na sociedade",
-    LifeArea('Profissional', Area.professional.name, 1),1
+    LifeArea(
+      'Profissional',
+      Area.professional.name,
+      _uuid.v4(),
+      isDefault: true,
+      isSynced: true,
+    ),
+    1, // userId (ou o campo equivalente do Purpose)
   ),
 ];

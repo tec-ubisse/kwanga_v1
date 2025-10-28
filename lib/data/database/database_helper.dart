@@ -1,4 +1,5 @@
 import 'package:path/path.dart';
+import 'package:uuid/uuid.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
@@ -22,6 +23,7 @@ class DatabaseHelper {
       path,
       version: 4,
       onCreate: (db, version) async {
+        const uuid = Uuid();
 
         // Create Users table
         await db.execute('''
@@ -35,10 +37,16 @@ class DatabaseHelper {
         // Create Life Areas table
         await db.execute('''
           CREATE TABLE life_areas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
+            user_id INTEGER,
             designation TEXT NOT NULL,
             icon_path TEXT NOT NULL,
-            is_system INTEGER NOT NULL DEFAULT 0
+            is_default INTEGER NOT NULL DEFAULT 0,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT,
+            updated_at TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
           )
         ''');
 
@@ -56,11 +64,16 @@ class DatabaseHelper {
 
         for (final area in predefinedAreas) {
           await db.insert('life_areas', {
+            'id': uuid.v4(),
             'designation': area['designation'],
             'icon_path': area['icon_path'],
-            'is_system': 1, // immutable system areas
+            'is_default': 1,
+            'is_synced': 0,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
           });
         }
+
 
         // Create Purposes table
         await db.execute('''
