@@ -3,6 +3,7 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
+import '../update_task_screen.dart';
 import 'task_tile.dart';
 
 class TaskListView extends StatelessWidget {
@@ -90,6 +91,12 @@ class TaskListView extends StatelessWidget {
                 ...pendingTasks.map(
                       (task) => TaskTile(
                     task: task,
+                    onTap: (_){
+
+                    },
+                        onLongPress: (){
+
+                        },
                     onDelete: onDelete,
                     onToggleComplete: onToggleComplete,
                   ),
@@ -112,6 +119,8 @@ class TaskListView extends StatelessWidget {
                 ...completedTasks.map(
                       (task) => TaskTile(
                     task: task,
+                    onTap: (_){},
+                        onLongPress: (){},
                     onDelete: onDelete,
                     onToggleComplete: onToggleComplete,
                   ),

@@ -1,5 +1,6 @@
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/data/database/database_helper.dart';
+import 'package:sqflite/sqflite.dart';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
@@ -99,4 +100,30 @@ class TaskDao {
       completed: row['completed'] as int,
     );
   }
+
+  Future<Map<String, int>> getTaskProgress(String listId) async {
+    final db = await databaseHelper.database;
+    final total = Sqflite.firstIntValue(await db.rawQuery(
+        'SELECT COUNT(*) FROM tasks WHERE list_id = ?', [listId]));
+    final completed = Sqflite.firstIntValue(await db.rawQuery(
+        'SELECT COUNT(*) FROM tasks WHERE list_id = ? AND completed = 1', [listId]));
+
+    return {
+      'total': total ?? 0,
+      'completed': completed ?? 0,
+    };
+  }
+
+  Future<List<TaskModel>> getTasksByListId(String listId) async {
+    final db = await databaseHelper.database;
+    final result = await db.query(
+      'tasks',
+      where: 'list_id = ?',
+      whereArgs: [listId],
+    );
+
+    return result.map((row) => _taskFromRow(row)).toList();
+  }
+
+
 }

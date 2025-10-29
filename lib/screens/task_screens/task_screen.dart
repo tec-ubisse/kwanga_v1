@@ -7,6 +7,7 @@ import 'package:kwanga/data/database/task_dao.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
+import 'package:kwanga/widgets/buttons/floating_button.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import 'package:kwanga/widgets/custom_drawer.dart';
 import 'package:kwanga/models/user.dart';
@@ -364,15 +365,7 @@ class _TaskScreenState extends State<TaskScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: cMainColor,
-        child: const Icon(Icons.add, color: cWhiteColor),
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (ctx) => const CreateTaskScreen()));
-        },
-      ),
+      floatingActionButton: FloatingButton(navigateTo: CreateTaskScreen()),
     );
   }
 }

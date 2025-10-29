@@ -41,11 +41,14 @@ class ListDao {
   }
 
   // UPDATE
-  Future<int> update(ListModel list, String id) async {
+  Future<int> update(ListModel list) async {
     final db = await databaseHelper.database;
-    return await db.update(
+    return db.update(
       'lists',
-      {'list_type': list.listType, 'description': list.description},
+      {
+        'list_type': list.listType,
+        'description': list.description,
+      },
       where: 'id = ?',
       whereArgs: [list.id],
     );

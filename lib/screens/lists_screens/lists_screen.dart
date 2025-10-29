@@ -5,8 +5,10 @@ import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/data/database/list_dao.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
+import 'package:kwanga/screens/lists_screens/update_list_screen.dart';
 import 'package:kwanga/screens/lists_screens/widgets/list_tile_item.dart';
 import 'package:kwanga/screens/lists_screens/widgets/lists_filter_bar.dart';
+import 'package:kwanga/widgets/buttons/floating_button.dart';
 import 'package:kwanga/widgets/custom_drawer.dart';
 
 class ListsScreen extends StatefulWidget {
@@ -90,7 +92,6 @@ class _ListsScreenState extends State<ListsScreen> {
               selectedFilter: selectedFilter,
               onFilterSelected: selectFilter,
             ),
-
             Expanded(
               child: FutureBuilder<List<ListModel>>(
                 future: _listsFuture,
@@ -106,6 +107,7 @@ class _ListsScreenState extends State<ListsScreen> {
                   final lists = snapshot.data ?? [];
 
                   List<ListModel> filteredLists;
+
                   if (selectedFilter == 1) {
                     filteredLists = lists
                         .where((l) => l.listType == 'Lista de Acção')
@@ -115,7 +117,12 @@ class _ListsScreenState extends State<ListsScreen> {
                         .where((l) => l.listType == 'Lista de Entradas')
                         .toList();
                   } else {
-                    filteredLists = lists;
+                    filteredLists = List.from(lists);
+                    filteredLists.sort((a, b) {
+                      if (a.listType == b.listType) return 0;
+                      if (a.listType == 'Lista de Acção') return -1;
+                      return 1;
+                    });
                   }
 
                   if (filteredLists.isEmpty) {
@@ -127,28 +134,151 @@ class _ListsScreenState extends State<ListsScreen> {
                     );
                   }
 
+                  if (selectedFilter == 0) {
+                    final actionLists = filteredLists
+                        .where((l) => l.listType == 'Lista de Acção')
+                        .toList();
+                    final entryLists = filteredLists
+                        .where((l) => l.listType == 'Lista de Entradas')
+                        .toList();
+
+                    return ListView(
+                      children: [
+                        if (actionLists.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'Listas de Acção',
+                              style: tTitle.copyWith(
+                                color: cMainColor,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                          ...actionLists.map(
+                            (list) => Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadiusGeometry.only(
+                                  topRight: Radius.circular(12.0),
+                                  bottomRight: Radius.circular(12.0),
+                                ),
+                                child: Slidable(
+                                  endActionPane: ActionPane(
+                                    motion: const StretchMotion(),
+                                    children: [
+                                      SlidableAction(
+                                        backgroundColor: cSecondaryColor,
+                                        onPressed: (_) =>
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (ctx) => UpdateListScreen(
+                                                  listModel: list,
+                                                ),
+                                              ),
+                                            ),
+                                        icon: Icons.edit,
+                                      ),
+                                      SlidableAction(
+                                        backgroundColor: cTertiaryColor,
+                                        onPressed: (_) => deleteList(list),
+                                        icon: Icons.delete,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ListTileItem(listModel: list),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (entryLists.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'Listas de Entradas',
+                              style: tTitle.copyWith(
+                                color: cMainColor,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                          ...entryLists.map(
+                            (list) => Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadiusGeometry.only(
+                                  topRight: Radius.circular(12.0),
+                                  bottomRight: Radius.circular(12.0),
+                                ),
+                                child: Slidable(
+                                  endActionPane: ActionPane(
+                                    motion: const StretchMotion(),
+                                    children: [
+                                      SlidableAction(
+                                        backgroundColor: cSecondaryColor,
+                                        onPressed: (_) =>
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (ctx) => UpdateListScreen(
+                                                  listModel: list,
+                                                ),
+                                              ),
+                                            ),
+                                        icon: Icons.edit,
+                                      ),
+                                      SlidableAction(
+                                        backgroundColor: cTertiaryColor,
+                                        onPressed: (_) => deleteList(list),
+                                        icon: Icons.delete,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ListTileItem(listModel: list),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
                   return ListView.builder(
                     itemCount: filteredLists.length,
                     itemBuilder: (context, index) {
                       final list = filteredLists[index];
                       return Padding(
                         padding: const EdgeInsets.only(top: 12.0),
-                        child: Slidable(
+                        child: ClipRRect(
+                          borderRadius: BorderRadiusGeometry.only(
+                            topRight: Radius.circular(12.0),
+                            bottomRight: Radius.circular(12.0),
+                          ),
+                          child: Slidable(
                             endActionPane: ActionPane(
                               motion: const StretchMotion(),
                               children: [
                                 SlidableAction(
-                                  backgroundColor: cTertiaryColor,
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(12),
-                                    bottomRight: Radius.circular(12),
+                                  icon: Icons.edit,
+                                  backgroundColor: cSecondaryColor,
+                                  onPressed: (_) => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (ctx) =>
+                                          UpdateListScreen(listModel: list),
+                                    ),
                                   ),
-                                  onPressed: (_) => deleteList(list),
+                                ),
+                                SlidableAction(
+                                  backgroundColor: cTertiaryColor,
                                   icon: Icons.delete,
+                                  onPressed: (_) => deleteList(list),
                                 ),
                               ],
-                            )
-                        , child: ListTileItem(listModel: list)),
+                            ),
+                            child: ListTileItem(listModel: list),
+                          ),
+                        ),
                       );
                     },
                   );
@@ -158,15 +288,7 @@ class _ListsScreenState extends State<ListsScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: cMainColor,
-        child: const Icon(Icons.add, color: cWhiteColor),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (ctx) => const CreateListsScreen()),
-          );
-        },
-      ),
+      floatingActionButton: FloatingButton(navigateTo: CreateListsScreen()),
     );
   }
 }

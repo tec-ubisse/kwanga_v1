@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kwanga/domain/usecases/life_area_usecases.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
 import 'package:kwanga/screens/main_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
+import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
+import 'package:kwanga/testes/controllers_on_press.dart';
 import 'package:kwanga/utils/secure_storage.dart';
 
 void main() async {
@@ -28,10 +31,11 @@ class MyApp extends StatelessWidget {
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
       // home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
-      //home: const TaskScreen(),
-      home: isLoggedIn
-          ? const ConnectionWrapper(child: TaskScreen())
-          : const LoginScreen(),
+      // home: ContextualAppBarExample(),
+      home: const TaskTrailingScreen(),
+      // home: isLoggedIn
+      //     ? const ConnectionWrapper(child: TaskScreen())
+      //     : const LoginScreen(),
       //home: const TaskScreen(),
     );
   }
