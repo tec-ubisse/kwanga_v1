@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
 
 class TaskSwitchRow extends StatelessWidget {
   final String label;
@@ -14,7 +15,6 @@ class TaskSwitchRow extends StatelessWidget {
     required this.onChanged,
   });
 
-  // Fábrica para "Lembrete" — usa Builder para capturar o BuildContext
   factory TaskSwitchRow.reminder({
     required bool enabled,
     required TimeOfDay time,
@@ -41,7 +41,7 @@ class TaskSwitchRow extends StatelessWidget {
             children: [
               const Icon(Icons.alarm, size: 20, color: Colors.grey),
               const SizedBox(width: 6),
-              Text(time.format(context), style: const TextStyle(fontSize: 16)),
+              Text(time.format(context), style: tNormal.copyWith(fontSize: 12.0)),
               const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
             ],
           ),
@@ -50,7 +50,6 @@ class TaskSwitchRow extends StatelessWidget {
     );
   }
 
-  // Fábrica para "Frequência" — idem, evita casts e usa o context correto
   factory TaskSwitchRow.frequency({
     required bool enabled,
     required String frequency,
@@ -85,7 +84,7 @@ class TaskSwitchRow extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(frequency, style: const TextStyle(fontSize: 16)),
+              Text(frequency, style: tNormal.copyWith(fontSize: 12.0)),
               const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
             ],
           ),

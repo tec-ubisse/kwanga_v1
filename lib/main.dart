@@ -1,139 +1,63 @@
 import 'dart:async';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:kwanga/domain/usecases/life_area_usecases.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
-import 'package:kwanga/screens/main_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
-import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
-import 'package:kwanga/testes/controllers_on_press.dart';
-import 'package:kwanga/utils/secure_storage.dart';
+import 'package:kwanga/widgets/connection_wrapper.dart';
 
-void main() async {
+import 'data/database/list_dao.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
 
-  final token = await SecureStorage.getToken();
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('ERRO CRÍTICO DE INICIALIZAÇÃO: \$e');
+  }
 
-  runApp(MyApp(isLoggedIn: token != null));
+  await ListDao().normalizeAllListTypes();
+
+  final all = await ListDao().getAllByUser(1); // ou o ID do teu user
+  for (final l in all) {
+    debugPrint("LISTA: ${l.description}  |  TYPE: ${l.listType}");
+  }
+
+
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-
-  const MyApp({super.key, required this.isLoggedIn});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
     return MaterialApp(
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
-      // home: isLoggedIn ? const TaskScreen() : const LoginScreen(),
-      // home: ContextualAppBarExample(),
-      home: const TaskTrailingScreen(),
-      // home: isLoggedIn
-      //     ? const ConnectionWrapper(child: TaskScreen())
-      //     : const LoginScreen(),
-      //home: const TaskScreen(),
+      home: authState.when(
+        loading: () => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, stackTrace) => const Scaffold(
+          body: Center(child: Text('Ocorreu um erro.')),
+        ),
+        data: (user) {
+          if (user != null) {
+            return const ConnectionWrapper(child: TaskScreen());
+          } else {
+            return const LoginScreen();
+          }
+        },
+      ),
     );
   }
-}
-
-
-class ConnectionWrapper extends StatefulWidget {
-
-  final Widget child;
-  const ConnectionWrapper({
-    super.key, required this.child
-  });
-
-  @override
-  State<ConnectionWrapper> createState() => _ConnectionWrapperState();
-
-}
-
-class _ConnectionWrapperState extends State<ConnectionWrapper>{
-
-  late StreamSubscription<List<ConnectivityResult>> _subscription;
-  bool _isOnline = true;
-  final LifeAreaUseCases _lifeAreaUseCases = LifeAreaUseCases();
-
-  @override
-  void initState(){
-    super.initState();
-
-    //Ira escutar as mudancas da conexao
-
-    _subscription = Connectivity().onConnectivityChanged.listen((results) {
-
-      final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
-      bool hasConnection = result != ConnectivityResult.none;
-
-      if(!mounted) return;
-
-      if(hasConnection != _isOnline){
-
-        setState(() => _isOnline = hasConnection);
-
-        //Mostrar mensagem de conexao
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                hasConnection
-                    ? "Conexao restaurada!"
-                    : "Voce esta offline.",
-              ),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        });
-
-        //Quando volta a ficar online, faz a sincronizacao
-        if(hasConnection){
-          _sincronizarDados();
-        }
-      }
-    });
-  }
-
-  Future<void> _sincronizarDados() async {
-    debugPrint("Sincornizando dados...");
-
-    try {
-      // Envia areas criadas localmente para o servidor
-      await _lifeAreaUseCases.syncPendingLifeAreas();
-
-      // Puxa as areas atualizados do servidor e salva localmente
-      await _lifeAreaUseCases.fetchAndSaveRemoteLifeAreas();
-
-      debugPrint("Sincronizacao concluida com sucesso");
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sincronizacao concluída com sucesso.")),
-      );
-    } catch (e) {
-      debugPrint("Erro ao sincronizar dados: $e");
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erro ao sincronizar dados.")),
-      );
-    }
-  }
-
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
-  }
-
 }

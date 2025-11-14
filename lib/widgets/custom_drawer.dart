@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kwanga/screens/configurations_screen/version_screen.dart';
+import 'package:kwanga/screens/development_screen.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
 import 'package:kwanga/screens/task_screens/task_screen.dart';
-import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
-
 import '../custom_themes/blue_accent_theme.dart';
 import '../custom_themes/text_style.dart';
-import '../data/life_areas.dart';
 import '../screens/configurations_screen/configurations_screen.dart';
-import '../screens/life_area_screens/read_life_areas_screen.dart';
-import '../screens/purpose_screens/read_purposes.dart';
+import '../screens/lists_screens/view_lists.dart';
 import 'drawer_tile.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -23,8 +21,52 @@ class CustomDrawer extends StatelessWidget {
           // Title
           Expanded(
             child: Container(
+              width: double.infinity,
               color: cMainColor,
-              child: Center(child: Text('Visão Geral', style: tTitle)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Visão Geral', style: tTitle.copyWith(fontSize: 32)),
+                  Row(
+                    spacing: 4.0,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        ' Kwanga Versão 1.9',
+                        style: tNormal.copyWith(
+                          color: cWhiteColor,
+                          fontSize: 12.0,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      Container(
+                        width: 24.0,
+                        height: 24.0,
+                        decoration: BoxDecoration(
+                          color: cWhiteColor,
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (ctx) =>
+                                    VersionScreen(currentVersion: "1.5.0"),
+                              ),
+                            );
+                          },
+                          child: Icon(
+                            Icons.remove_red_eye_outlined,
+                            size: 16,
+                            color: cMainColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -35,29 +77,48 @@ class CustomDrawer extends StatelessWidget {
               children: [
                 DrawerTile(
                   tileName: 'Tarefas',
-                  tileImage: 'focus-64',
-                  navigateTo: TaskTrailingScreen(),
+                  tileImage: 'task',
+                  navigateTo: TaskScreen(),
                 ),
                 DrawerTile(
-                  tileName: 'Listas',
-                  tileImage: 'focus-64',
-                  navigateTo: ListsScreen(),
+                  tileName: 'Entradas',
+                  tileImage: 'entry',
+                  navigateTo: ListsScreen(listType: 'entry'),
                 ),
                 DrawerTile(
-                  tileName: 'Propósitos',
-                  tileImage: 'focus-64',
-                  navigateTo: ReadPurposes(),
+                  tileName: 'Proximas acções',
+                  tileImage: 'project',
+                  navigateTo: ListsScreen(listType: 'action',),
+                ),
+                DrawerTile(
+                  tileName: 'Objectivos Anuais',
+                  tileImage: 'yearly_goals',
+                  navigateTo: DevelopmentScreen(pageName: 'Objectivos Anuais'),
+                ),
+                DrawerTile(
+                  tileName: 'Objectivos Mensais',
+                  tileImage: 'tasklist',
+                  navigateTo: DevelopmentScreen(pageName: 'Objectivos Mensais'),
+                ),
+                DrawerTile(
+                  tileName: 'Gerir Projectos',
+                  tileImage: 'projects',
+                  navigateTo: DevelopmentScreen(pageName: 'Gerir Projectos'),
                 ),
                 DrawerTile(
                   tileName: 'Áreas da Vida',
-                  tileImage: 'focus-64',
-                  navigateTo: ReadLifeAreasScreen(),
+                  tileImage: 'life_area',
+                  navigateTo: DevelopmentScreen(pageName: 'Áreas da Vida'),
+                ),
+                DrawerTile(
+                  tileName: 'Gerir Listas',
+                  tileImage: 'to-do',
+                  navigateTo: ViewLists(),
                 ),
               ],
             ),
           ),
 
-          // Log Out
           GestureDetector(
             onTap: () {
               Navigator.pushReplacement(

@@ -1,60 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/data/database/list_dao.dart';
 import 'package:kwanga/models/list_model.dart';
-import 'package:kwanga/screens/lists_screens/lists_screen.dart';
+import 'package:kwanga/providers/lists_provider.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
+import 'package:kwanga/utils/list_type_utils.dart';
 
-import '../../domain/usecases/auth_usecases.dart';
-import '../../models/user.dart';
+class CreateOrEditListScreen extends ConsumerStatefulWidget {
+  final ListModel? existingList;
 
-class CreateListsScreen extends StatefulWidget {
-  const CreateListsScreen({super.key});
+  const CreateOrEditListScreen({super.key, this.existingList});
 
   @override
-  State<CreateListsScreen> createState() => _CreateListsScreenState();
+  ConsumerState<CreateOrEditListScreen> createState() =>
+      _CreateOrEditListScreenState();
 }
 
-class _CreateListsScreenState extends State<CreateListsScreen> {
-  String? _selectedListType;
-  String? _listDescription;
-  final List<String> _listTypes = ['Lista de Acção', 'Lista de Entradas'];
+class _CreateOrEditListScreenState
+    extends ConsumerState<CreateOrEditListScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _listDao = ListDao();
-  UserModel? currentUser;
+  final _descriptionController = TextEditingController();
+
+  final List<Map<String, String>> _listTypes = [
+    {"label": "Lista de Acções", "value": "action"},
+    {"label": "Lista de Entradas", "value": "entry"},
+  ];
+
+  String? _selectedListType;
+  String? _listTypeError;
+  bool _isLoading = false;
+
+  bool get isEditing => widget.existingList != null;
 
   @override
   void initState() {
     super.initState();
-    getCurrentUser();
+    if (isEditing) {
+      _selectedListType =
+          normalizeListType(widget.existingList!.listType);
+      _descriptionController.text = widget.existingList!.description;
+    }
   }
 
-  Future<void> getCurrentUser() async {
-    final AuthUseCases _auth = AuthUseCases();
-    final success = await _auth.getUserData();
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
 
-  void saveList() async {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _saveOrUpdateList() async {
+    final isFormValid = _formKey.currentState?.validate() ?? false;
+    if (!isFormValid || _selectedListType == null) {
       if (_selectedListType == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selecione um tipo de lista')),
+        setState(() =>
+        _listTypeError = 'É obrigatório selecionar um tipo de lista');
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final notifier = ref.read(listsProvider.notifier);
+
+      if (isEditing) {
+        final updatedList = widget.existingList!.copyWith(
+          listType: normalizeListType(_selectedListType!),
+          description: _descriptionController.text.trim(),
         );
-        return;
+        await notifier.updateList(updatedList);
+      } else {
+        await notifier.addList(
+          listType: normalizeListType(_selectedListType!),
+          description: _descriptionController.text.trim(),
+        );
       }
 
-      final newList = ListModel(
-        userId: 14,
-        listType: _selectedListType!,
-        description: _listDescription!,
-      );
-      await _listDao.insert(newList);
+      if (mounted) Navigator.of(context).pop();
 
-      if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => ListsScreen()));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -64,93 +96,100 @@ class _CreateListsScreenState extends State<CreateListsScreen> {
       appBar: AppBar(
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
-        title: Text('Adicionar Lista'),
+        title: Text(isEditing ? 'Editar Lista' : 'Adicionar Lista'),
       ),
       body: Column(
         children: [
           Expanded(
-            child: SafeArea(
             child: SingleChildScrollView(
-            padding: defaultPadding,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
-                    kToolbarHeight -
-                    MediaQuery.of(context).padding.top,
-              ),
-              child: IntrinsicHeight(
+              padding: defaultPadding,
+              child: Form(
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 12.0,
-                        children: [
-                          Text('Tipo de Lista', style: tNormal),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.0),
-                              border: Border.all(color: cBlackColor),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: _selectedListType,
-                                hint: const Text('Selecione um tipo de lista'),
-                                items: _listTypes.map((String listType) {
-                                  return DropdownMenuItem<String>(
-                                    value: listType,
-                                    child: Text(listType, style: tNormal),
-                                  );
-                                }).toList(),
-                                onChanged: (String? selectedListType) {
-                                  setState(() {
-                                    _selectedListType = selectedListType!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16.0),
-                          Text('Descrição', style: tNormal),
-                          TextFormField(
-                            decoration: inputDecoration,
-                            maxLines: 5,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Deve conter a descrição da lista';
-                              }
-                              return null;
-                            },
-                            onChanged: (value) {
-                              _listDescription = value;
-                            },
-                          ),
-                        ],
+                    Text('Tipo de Lista', style: tNormal),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(
+                          color: _listTypeError != null
+                              ? Theme.of(context).colorScheme.error
+                              : cBlackColor,
+                        ),
                       ),
+                      child: Padding(
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: _selectedListType,
+                          hint:
+                          const Text('Selecione um tipo de lista'),
+                          items: _listTypes.map((item) {
+                            return DropdownMenuItem<String>(
+                              value: item["value"],
+                              child:
+                              Text(item["label"]!, style: tNormal),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedListType = value;
+                              _listTypeError = null;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (_listTypeError != null)
+                      Padding(
+                        padding:
+                        const EdgeInsets.only(top: 8.0, left: 12.0),
+                        child: Text(
+                          _listTypeError!,
+                          style: TextStyle(
+                            color:
+                            Theme.of(context).colorScheme.error,
+                            fontSize: 12.0,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16.0),
+                    Text('Designação', style: tNormal),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: inputDecoration,
+                      maxLines: 2,
+                      maxLength: 30,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Deve conter a descrição da lista';
+                        }
+                        return null;
+                      },
                     ),
                   ],
                 ),
               ),
             ),
-                ),
-                ),
           ),
-          SizedBox(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
-              child: GestureDetector(
-                onTap: saveList,
-                child: MainButton(buttonText: 'Salvar'),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 24.0,
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator()
+                : GestureDetector(
+              onTap: _saveOrUpdateList,
+              child: MainButton(
+                buttonText: isEditing ? 'Actualizar' : 'Salvar',
               ),
             ),
-          )
+          ),
         ],
       ),
-
     );
   }
 }

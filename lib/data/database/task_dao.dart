@@ -40,7 +40,6 @@ class TaskDao {
       where: 'user_id = ?',
       whereArgs: [userId],
     );
-
     return result.map((row) => _taskFromRow(row)).toList();
   }
 
@@ -78,9 +77,6 @@ class TaskDao {
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ---------------------------
-  // HELPER: converter row do SQLite para TaskModel
-  // ---------------------------
   TaskModel _taskFromRow(Map<String, dynamic> row) {
     return TaskModel(
       id: row['id'] as String,
@@ -107,7 +103,6 @@ class TaskDao {
         'SELECT COUNT(*) FROM tasks WHERE list_id = ?', [listId]));
     final completed = Sqflite.firstIntValue(await db.rawQuery(
         'SELECT COUNT(*) FROM tasks WHERE list_id = ? AND completed = 1', [listId]));
-
     return {
       'total': total ?? 0,
       'completed': completed ?? 0,
@@ -124,6 +119,4 @@ class TaskDao {
 
     return result.map((row) => _taskFromRow(row)).toList();
   }
-
-
 }

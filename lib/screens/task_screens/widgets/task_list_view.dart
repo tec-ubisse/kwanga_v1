@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
-import '../update_task_screen.dart';
 import 'task_tile.dart';
 
 class TaskListView extends StatelessWidget {
@@ -12,7 +10,11 @@ class TaskListView extends StatelessWidget {
   final int selectedButton;
   final void Function(int) onSelectButton;
   final void Function(TaskModel) onDelete;
+  final void Function(TaskModel) onUpdate;
   final void Function(TaskModel, int) onToggleComplete;
+
+  final void Function(TaskModel)? onLongPressTask;
+  final void Function(TaskModel, int) onTapTask;
 
   const TaskListView({
     super.key,
@@ -22,109 +24,90 @@ class TaskListView extends StatelessWidget {
     required this.onSelectButton,
     required this.onDelete,
     required this.onToggleComplete,
+    required this.onUpdate,
+    this.onLongPressTask,
+    required this.onTapTask,
   });
 
   @override
   Widget build(BuildContext context) {
-    final selectedList =
-    selectedButton == 0 ? null : lists[selectedButton - 1];
+    // <-- FILTROS REMOVIDOS: mostramos todas as tarefas recebidas em `tasks`.
 
-    // 🔹 Filtering by type of list
-    final filteredTasks = selectedList == null
-        ? tasks
-        : tasks.where((t) => t.listType == selectedList.description).toList();
+    // Separar pendentes e concluídas a partir da lista completa
+    final pendingTasks = tasks.where((t) => t.completed == 0).toList();
+    final completedTasks = tasks.where((t) => t.completed == 1).toList();
 
-    // Separating completed / incomplete
-    final pendingTasks = filteredTasks.where((t) => t.completed == 0).toList();
-    final completedTasks = filteredTasks.where((t) => t.completed == 1).toList();
-
+    // Mensagem quando não há tasks
     if (tasks.isEmpty) {
       return const Center(
         child: Text('Você não tem tarefas ainda.'),
       );
     }
 
+    Widget buildTile(TaskModel task) {
+      return TaskTile(
+        key: ValueKey(task.id),
+        task: task,
+
+        onDelete: onDelete,
+        onUpdate: onUpdate,
+
+        // Chamado APENAS após animações (TaskTile controla tudo)
+        onToggleFinal: (t, status) {
+          onToggleComplete(t, status);
+        },
+
+        onLongPress: () => onLongPressTask?.call(task),
+
+        onTap: () => onTapTask(task, 0),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Lists - to work as filters
-        SizedBox(
-          height: 36,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: lists.length + 1,
-            itemBuilder: (context, index) {
-              final isSelected = selectedButton == index;
-              final color = isSelected ? cSecondaryColor : null;
-              final textColor = isSelected ? cWhiteColor : cBlackColor;
-              final label =
-              index == 0 ? 'Todas' : lists[index - 1].description;
+        const SizedBox(height: 12),
 
-              return GestureDetector(
-                onTap: () => onSelectButton(index),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(24.0),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8.0,
-                    horizontal: 16.0,
-                  ),
-                  child: Text(label, style: tNormal.copyWith(color: textColor)),
-                ),
-              );
-            },
+        // Indicador simples de totais para toda a lista
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            '${pendingTasks.length} pendentes · ${completedTasks.length} concluídas',
+            style: tNormal.copyWith(color: Colors.grey[700]),
           ),
         ),
-
-        const SizedBox(height: 16),
 
         Expanded(
           child: ListView(
             children: [
-              // Pending Tasks
-              if (pendingTasks.isNotEmpty) ...[
-                Text('Tarefas', style: tSmallTitle),
-                const SizedBox(height: 8),
-                ...pendingTasks.map(
-                      (task) => TaskTile(
-                    task: task,
-                    onTap: (_){
+              // -----------------------------
+              // TAREFAS PENDENTES (todas)
+              // -----------------------------
+              Text("Tarefas", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-                    },
-                        onLongPress: (){
-
-                        },
-                    onDelete: onDelete,
-                    onToggleComplete: onToggleComplete,
-                  ),
-                ),
-              ] else
+              if (pendingTasks.isNotEmpty)
+                ...pendingTasks.map(buildTile).toList()
+              else
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
-                    'Nenhuma tarefa pendente.',
-                    style: tNormal.copyWith(fontStyle: FontStyle.italic),
+                    "Nenhuma tarefa pendente.",
+                    style: tNormal.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Concluded
+              // -----------------------------
+              // TAREFAS CONCLUÍDAS (todas)
+              // -----------------------------
               if (completedTasks.isNotEmpty) ...[
-                Text('Concluídas', style: tSmallTitle),
+                Text("Concluídas", style: tSmallTitle),
                 const SizedBox(height: 8),
-                ...completedTasks.map(
-                      (task) => TaskTile(
-                    task: task,
-                    onTap: (_){},
-                        onLongPress: (){},
-                    onDelete: onDelete,
-                    onToggleComplete: onToggleComplete,
-                  ),
-                ),
+                ...completedTasks.map(buildTile).toList(),
               ],
             ],
           ),

@@ -1,55 +1,80 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/screens/login_screens/login_screen.dart';
-import 'package:kwanga/screens/login_screens/email_verification_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
+import 'package:kwanga/providers/auth_provider.dart';
+import 'package:kwanga/screens/login_screens/email_verification_screen.dart';
+import 'package:kwanga/screens/login_screens/login_screen.dart';
 import 'package:kwanga/widgets/buttons/icon_button.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
-import 'package:kwanga/custom_themes/text_style.dart';
 
-import 'package:kwanga/domain/usecases/auth_usecases.dart';
-
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
-  final AuthUseCases _auth = AuthUseCases();
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
+  bool _acceptTerms = false;
+  bool _isLoading = false;
 
+  // 👁️ Controla se a senha está visível ou oculta
+  bool _obscurePassword = true;
 
-  Future<void> _register() async {
-    final success = await _auth.registerUser(
-      _email,
-      password,
-    );
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Conta criada com sucesso')));
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => EmailVerification(email: _email)));
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Falha ao criar conta')));
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('É obrigatório aceitar os termos e condições')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(authProvider.notifier).register(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Conta criada! Verifique o seu email.')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                EmailVerificationScreen(email: _emailController.text.trim()),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  bool acceptTerms = false;
-
-  void changeTerms() {
-    setState(() {
-      acceptTerms = !acceptTerms;
-    });
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
-
-  // variáveis de controle para validação
-  final _formKey = GlobalKey<FormState>();
-  var _email = '';
-  var password = '';
-  var terms = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +91,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: IntrinsicHeight(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Spacer(),
                     Column(
@@ -82,219 +106,147 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: cWhiteColor,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(24.0),
-                          topRight: Radius.circular(24.0),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24.0),
                         ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          spacing: 24.0,
-                          children: [
-                            Form(
-                              key: _formKey,
-                              child: Column(
-                                spacing: 24.0,
-                                children: [
-                                  // Campo de email
-                                  TextFormField(
-                                    keyboardType: TextInputType.emailAddress,
-                                    decoration: InputDecoration(
-                                      label: Text('Email'),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: cBlackColor,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          12.0,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: cSecondaryColor,
-                                          width: 2.0,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          12.0,
-                                        ),
-                                      ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration:
+                                const InputDecoration(labelText: 'Email'),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Digite um email';
+                                  }
+                                  final emailRegex = RegExp(
+                                      r"^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$");
+                                  if (!emailRegex.hasMatch(value)) {
+                                    return 'Email inválido';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 24.0),
+
+                              // 👇 Campo de senha com botão de visibilidade
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: 'Senha',
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: cSecondaryColor,
                                     ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Digite um email';
-                                      }
-
-                                      final emailRegex = RegExp(
-                                        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                                      );
-
-                                      if (!emailRegex.hasMatch(value)) {
-                                        return 'Email inválido';
-                                      }
-                                      _email = value;
-                                      return null;
-                                    },
-                                    onSaved: (value) {
-                                      _email = value!;
-                                    },
-                                  ),
-
-                                  // Campo de senha
-                                  TextFormField(
-                                    keyboardType: TextInputType.visiblePassword,
-                                    obscureText: true,
-                                    decoration: InputDecoration(
-                                      label: Text('Senha'),
-                                      labelStyle: tNormal,
-                                      enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: cBlackColor,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          12.0,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: cSecondaryColor,
-                                          width: 2.0,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          12.0,
-                                        ),
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Digite uma senha';
-                                      }
-                                      if (value.length < 8) {
-                                        return 'Senha fraca. Digite outra';
-                                      }
-                                      // return null;
-                                    },
-                                    onChanged: (value) {
-                                      password = value;
-                                    },
-                                  ),
-
-                                  // Campo de concordo com os termos
-                                  GestureDetector(
-                                    onTap: () {
+                                    onPressed: () {
                                       setState(() {
-                                        acceptTerms = !acceptTerms;
+                                        _obscurePassword = !_obscurePassword;
                                       });
-                                      terms = acceptTerms;
                                     },
-                                    child: Row(
-                                      spacing: 8.0,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          acceptTerms
-                                              ? Icons.check_box_outlined
-                                              : Icons.check_box_outline_blank,
-                                          color: cBlackColor,
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            'Aceito os Termos de Condições de Uso',
-                                            style: tNormal,
-                                          ),
-                                        ),
-                                      ],
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Digite uma senha';
+                                  }
+                                  if (value.length < 8) {
+                                    return 'A senha deve ter pelo menos 8 caracteres';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 24.0),
+                              GestureDetector(
+                                onTap: () => setState(
+                                        () => _acceptTerms = !_acceptTerms),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _acceptTerms
+                                          ? Icons.check_box
+                                          : Icons.check_box_outline_blank,
+                                      color: cSecondaryColor,
+                                    ),
+                                    const SizedBox(width: 8.0),
+                                    const Expanded(
+                                      child: Text(
+                                          'Aceito os Termos de Condições de Uso'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24.0),
+                              _isLoading
+                                  ? const CircularProgressIndicator()
+                                  : GestureDetector(
+                                onTap: _submit,
+                                child: const MainButton(
+                                    buttonText: 'Criar'),
+                              ),
+                              const SizedBox(height: 24.0),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: cBlackColor,
+                                      thickness: 1,
+                                      endIndent: 10,
                                     ),
                                   ),
-
-                                  GestureDetector(
-                                    child: MainButton(buttonText: 'Criar'),
-                                    onTap: () {
-                                      if (_formKey.currentState!.validate()) {
-                                        if (!terms) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'É obrigatório aceitar os termos e condições',
-                                              ),
-                                            ),
-                                          );
-                                          return;
-                                        } else {
-                                          _register();
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  EmailVerification(email: _email,),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                      // Prosseguir com o cadastro
-                                    },
+                                  Text('ou crie com', style: tNormal),
+                                  Expanded(
+                                    child: Divider(
+                                      color: cBlackColor,
+                                      thickness: 1,
+                                      indent: 10,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-
-                            // Separador
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Divider(
-                                    color: cBlackColor,
-                                    thickness: 1,
-                                    endIndent:
-                                        10, // espaço entre a linha e o texto
+                              const SizedBox(height: 24.0),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  CustomIconButton(iconName: 'google'),
+                                  SizedBox(width: 8.0),
+                                  CustomIconButton(iconName: 'apple_logo'),
+                                  SizedBox(width: 8.0),
+                                  CustomIconButton(iconName: 'microsoft'),
+                                ],
+                              ),
+                              const SizedBox(height: 24.0),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Já tem uma conta?', style: tNormal),
+                                  const SizedBox(width: 4.0),
+                                  GestureDetector(
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (ctx) =>
+                                        const LoginScreen(),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Faça o Login',
+                                      style: tSmallTitle,
+                                    ),
                                   ),
-                                ),
-                                Text('ou crie com', style: tNormal),
-                                Expanded(
-                                  child: Divider(
-                                    color: cBlackColor,
-                                    thickness: 1,
-                                    indent:
-                                        10, // espaço entre o texto e a linha
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            // Botoes de provedores de email
-                            Row(
-                              spacing: 8.0,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CustomIconButton(iconName: 'google'),
-                                CustomIconButton(iconName: 'apple_logo'),
-                                CustomIconButton(iconName: 'microsoft'),
-                              ],
-                            ),
-
-                            // Direcionando para a tela de Login
-                            Row(
-                              spacing: 4.0,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Já tem uma conta?', style: tNormal),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => const LoginScreen()));
-                                  },
-                                  child: Text(
-                                    'Faça o Login',
-                                    style: tSmallTitle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

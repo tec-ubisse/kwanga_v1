@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:kwanga/core/env.dart';
 import 'package:kwanga/utils/secure_storage.dart';
+
+// Provider para o ApiService
+final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
 class ApiService {
   final String baseUrl = Env.apiUrl;
@@ -12,7 +16,7 @@ class ApiService {
 
     if (auth) {
       final token = await SecureStorage.getToken();
-      if (token != null) headers['Authorization'] = 'Bearer $token';
+      if (token != null) headers['X-TOKEN'] = token;
     }
 
     return await http.post(uri, headers: headers, body: jsonEncode(data));
@@ -24,7 +28,7 @@ class ApiService {
 
     if (auth) {
       final token = await SecureStorage.getToken();
-      if (token != null) headers['Authorization'] = 'Bearer $token';
+      if (token != null) headers['X-TOKEN'] = token;
     }
 
     return await http.get(uri, headers: headers);

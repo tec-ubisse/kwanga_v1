@@ -25,6 +25,7 @@ class DrawerTile extends StatelessWidget {
         leading: Image.asset(
           'assets/menu/$tileImage.png',
           width: 24.0,
+          height: 24.0,
           color: cBlackColor,
         ),
       ),

@@ -1,146 +1,198 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/data/database/list_dao.dart';
-import 'package:kwanga/data/database/task_dao.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
-import 'package:kwanga/models/user.dart';
-import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
+import 'package:kwanga/providers/auth_provider.dart';
+import 'package:kwanga/providers/lists_provider.dart';
+import 'package:kwanga/providers/tasks_provider.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import 'widgets/date_option_selector.dart';
 import 'widgets/task_switch_row.dart';
 
-class CreateTaskScreen extends StatefulWidget {
-  const CreateTaskScreen({super.key});
+class CreateTaskScreen extends ConsumerStatefulWidget {
+  const CreateTaskScreen({super.key, required this.listModel, this.taskModel});
+
+  final ListModel listModel;
+  final TaskModel? taskModel;
 
   @override
-  State<CreateTaskScreen> createState() => _CreateTaskScreenState();
+  ConsumerState<CreateTaskScreen> createState() => _CreateTaskScreenState();
 }
 
-class _CreateTaskScreenState extends State<CreateTaskScreen> {
+class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _listDao = ListDao();
-  final _taskDao = TaskDao();
-  final _userModel = UserModel(id: 2025, email: 'alberto.ubisse@techworks.com', password: 'tech@123');
+  late final TextEditingController _descriptionController;
 
-  late Future<List<ListModel>> _listsFuture;
-  String _taskDescription = '';
   DateTime? _selectedDate;
-  ListModel? _selectedList;
+  String? _selectedListId;
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
   String _selectedFrequency = 'Todos os dias';
   bool _reminderEnabled = false;
   bool _frequencyEnabled = false;
+  String? _listTypeError;
+  bool _isLoading = false;
+
+  bool get isEditing => widget.taskModel != null;
 
   @override
   void initState() {
     super.initState();
-    _listsFuture = _listDao.getAll();
+    _descriptionController = TextEditingController(text: widget.taskModel?.description ?? '');
+    _selectedListId = isEditing ? widget.taskModel!.listId : widget.listModel.id;
+    if (isEditing) {
+      _selectedDate = widget.taskModel!.deadline;
+      final taskTime = widget.taskModel!.time;
+      if (taskTime != null) {
+        _selectedTime = TimeOfDay(hour: taskTime.hour, minute: taskTime.minute);
+      }
+    }
   }
 
-  void _onDateChanged(DateTime? date) => setState(() => _selectedDate = date);
-  void _onTimePicked(TimeOfDay time) => setState(() => _selectedTime = time);
-  void _onFrequencySelected(String freq) => setState(() => _selectedFrequency = freq);
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
 
-  Future<void> saveTask() async {
-    if (!_formKey.currentState!.validate() || _selectedList == null) return;
+  Future<void> _saveOrUpdateTask() async {
+    if (!(_formKey.currentState?.validate() ?? false) || _selectedListId == null) {
+       if(_selectedListId == null) setState(() => _listTypeError = 'É obrigatório selecionar uma lista');
+      return;
+    }
 
-    final now = DateTime.now();
-    final task = TaskModel(
-      description: _taskDescription,
-      listType: _selectedList!.description,
-      listId: _selectedList!.id,
-      deadline: _selectedDate,
-      frequency: [],
-      userId: _userModel.id!,
-      time: DateTime(now.year, now.month, now.day, _selectedTime.hour, _selectedTime.minute),
-      completed: 0,
-    );
+    final userId = ref.read(authProvider).value?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Utilizador não autenticado.')));
+      return;
+    }
 
-    await _taskDao.insert(task);
-    if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const TaskTrailingScreen()));
+    setState(() => _isLoading = true);
+
+    try {
+      final tasksNotifier = ref.read(tasksProvider.notifier);
+      final now = DateTime.now();
+
+      if (isEditing) {
+        final updatedTask = widget.taskModel!.copyWith(
+          listId: _selectedListId!,
+          description: _descriptionController.text.trim(),
+          deadline: _selectedDate,
+          time: DateTime(now.year, now.month, now.day, _selectedTime.hour, _selectedTime.minute),
+          frequency: _frequencyEnabled ? [_selectedFrequency] : null,
+        );
+        await tasksNotifier.updateTask(updatedTask);
+      } else {
+        final newTask = TaskModel(
+          description: _descriptionController.text.trim(),
+          listType: widget.listModel.listType,
+          listId: _selectedListId!,
+          deadline: _selectedDate,
+          frequency: _frequencyEnabled ? [_selectedFrequency] : null,
+          userId: userId,
+          time: DateTime(now.year, now.month, now.day, _selectedTime.hour, _selectedTime.minute),
+          completed: 0, // Corrigido: a propriedade `completed` é agora passada.
+        );
+        await tasksNotifier.addTask(newTask);
+      }
+
+      if (mounted) Navigator.of(context).pop(true);
+
+    } catch (e) {
+       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
+    } finally {
+       if(mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final asyncLists = ref.watch(listsProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Adicionar Tarefa'), backgroundColor: cMainColor, foregroundColor: cWhiteColor),
+      appBar: AppBar(
+        title: Text(isEditing ? 'Editar Tarefa' : 'Adicionar Tarefa'),
+        backgroundColor: cMainColor,
+        foregroundColor: cWhiteColor,
+      ),
       body: Column(
         children: [
           Expanded(
-            flex: 9,
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: defaultPadding,
-                child: FutureBuilder<List<ListModel>>(
-                  future: _listsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Erro: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-                    }
-                    final lists = snapshot.data ?? [];
-                    if (lists.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Nenhuma lista encontrada.'),
-                            MainButton(buttonText: 'Criar Lista'),
-                          ],
-                        ),
-                      );
-                    }
+            child: SingleChildScrollView(
+              padding: defaultPadding,
+              child: asyncLists.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Erro: $err')),
+                data: (lists) {
+                  final filteredLists = lists.where((l) => l.listType == widget.listModel.listType).toList();
+                  final selectedList = filteredLists.where((l) => l.id == _selectedListId).firstOrNull;
 
-                    return Form(
+                  if (lists.isEmpty) {
+                      return const Center(child: Text('Nenhuma lista encontrada.'));
+                  }
+
+                  return Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 12.0,
                         children: [
-                          DropdownButtonFormField<ListModel>(
-                            decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                            hint: const Text('Escolha uma lista'),
-                            value: _selectedList,
-                            items: lists.map((list) => DropdownMenuItem(value: list, child: Text(list.description))).toList(),
-                            onChanged: (value) => setState(() => _selectedList = value),
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12.0),
+                              border: Border.all(color: _listTypeError != null ? Theme.of(context).colorScheme.error : cBlackColor),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                hint: Text('Escolha a ${widget.listModel.listType}'),
+                                value: selectedList?.id,
+                                items: filteredLists.map((list) => DropdownMenuItem(value: list.id, child: Text(list.description))).toList(),
+                                onChanged: (value) => setState(() => _selectedListId = value),
+                              ),
+                            ),
                           ),
-                          TextFormField(
+                          if (_listTypeError != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0), 
+                              child: Text(_listTypeError!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12.0)),
+                            ),
+                           const SizedBox(height: 16.0),
+                           TextFormField(
+                            controller: _descriptionController,
                             decoration: inputDecoration.copyWith(labelText: 'Descrição'),
                             maxLines: 3,
-                            validator: (v) => (v == null || v.isEmpty) ? 'Descreva a tarefa' : null,
-                            onChanged: (v) => _taskDescription = v,
+                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Este campo é obrigatório' : null,
                           ),
-                          DateOptionSelector(onDateChanged: _onDateChanged),
-                          TaskSwitchRow.reminder(
-                            enabled: _reminderEnabled,
-                            time: _selectedTime,
-                            onChanged: (v) => setState(() => _reminderEnabled = v),
-                            onTimePicked: _onTimePicked,
-                          ),
-                          TaskSwitchRow.frequency(
-                            enabled: _frequencyEnabled,
-                            frequency: _selectedFrequency,
-                            onChanged: (v) => setState(() => _frequencyEnabled = v),
-                            onFrequencySelected: _onFrequencySelected,
-                          ),
+                           if (widget.listModel.listType != 'Lista de Entradas')
+                            Column(
+                              children: [
+                                DateOptionSelector(onDateChanged: (date) => setState(() => _selectedDate = date)),
+                                TaskSwitchRow.reminder(
+                                  enabled: _reminderEnabled,
+                                  time: _selectedTime,
+                                  onChanged: (v) => setState(() => _reminderEnabled = v),
+                                  onTimePicked: (time) => setState(() => _selectedTime = time),
+                                ),
+                                TaskSwitchRow.frequency(
+                                  enabled: _frequencyEnabled,
+                                  frequency: _selectedFrequency,
+                                  onChanged: (v) => setState(() => _frequencyEnabled = v),
+                                  onFrequencySelected: (freq) => setState(() => _selectedFrequency = freq),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     );
-                  },
-                ),
+                },
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
-            child: GestureDetector(
-                onTap: saveTask,
-                child: MainButton(buttonText: 'Salvar')),
+            child: _isLoading ? const CircularProgressIndicator() : GestureDetector(onTap: _saveOrUpdateTask, child: const MainButton(buttonText: 'Salvar')),
           ),
         ],
       ),

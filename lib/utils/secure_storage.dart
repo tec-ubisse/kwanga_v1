@@ -1,5 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-// Salvar token de fotma sehura
+// safely save token
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
@@ -11,6 +11,10 @@ class SecureStorage {
     await _storage.write(key: _tokenKey, value: token);
     await _storage.write(key: _userIdKey, value: userId.toString());
     await _storage.write(key: _userEmailKey, value: userEmail);
+  }
+
+  static Future<void> deleteToken() async {
+    await _storage.delete(key: _tokenKey);
   }
 
   static Future<String?> getToken() async {

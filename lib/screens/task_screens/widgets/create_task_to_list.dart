@@ -7,7 +7,6 @@ import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/models/user.dart';
 import 'package:kwanga/screens/task_screens/list_task_screen.dart';
-import 'package:kwanga/screens/task_screens/task_trailing_screen.dart';
 import 'package:kwanga/screens/task_screens/widgets/date_option_selector.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_switch_row.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
@@ -39,11 +38,12 @@ class _CreateTaskToListState extends State<CreateTaskToList> {
   String _selectedFrequency = 'Todos os dias';
   bool _reminderEnabled = false;
   bool _frequencyEnabled = false;
+  int? _userId;
 
   @override
   void initState() {
     super.initState();
-    _listsFuture = _listDao.getAll();
+    _listsFuture = _listDao.getAllByUser(_userId!);
     _selectedList = widget.selectedList;
   }
 
@@ -147,7 +147,7 @@ class _CreateTaskToListState extends State<CreateTaskToList> {
                             ),
                             maxLines: 3,
                             validator: (v) => (v == null || v.isEmpty)
-                                ? 'Descreva a tarefa'
+                                ? 'Este campo é obrigatório'
                                 : null,
                             onChanged: (v) => _taskDescription = v,
                           ),

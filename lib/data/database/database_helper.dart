@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
 
         // Create Users table
@@ -93,6 +93,8 @@ class DatabaseHelper {
             user_id INTEGER NOT NULL,
             list_type TEXT NOT NULL,
             description TEXT NOT NULL,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
           )
         ''');
@@ -113,6 +115,12 @@ class DatabaseHelper {
             FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 5) {
+          await db.execute('ALTER TABLE lists ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE lists ADD COLUMN is_synced INTEGER NOT NULL DEFAULT 0');
+        }
       },
     );
   }

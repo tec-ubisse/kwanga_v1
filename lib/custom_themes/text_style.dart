@@ -22,6 +22,13 @@ final tSmallTitle = TextStyle(
   fontSize: 15,
 );
 
+final tSmall = TextStyle(
+  color: cSecondaryColor,
+  fontFamily: 'Inter',
+  fontWeight: FontWeight.w300,
+  fontSize: 10,
+);
+
 final tButtonText = TextStyle(
   color: cWhiteColor,
   fontFamily: 'Inter',

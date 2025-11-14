@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/screens/lists_screens/create_lists_screen.dart';
-import 'package:kwanga/screens/task_screens/task_screen.dart';
 import 'package:kwanga/widgets/custom_drawer.dart';
 
 class MainScreen extends StatefulWidget {
@@ -25,7 +23,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
       drawer: CustomDrawer(),
-      body: CreateListsScreen(),
+      body: Center(child: Text('Kwanga'),),
     );
   }
 }

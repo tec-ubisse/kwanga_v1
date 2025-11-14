@@ -16,7 +16,7 @@ class ListsFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final filters = [
       'Todas',
-      'Listas de Acção',
+      'Listas de Acções',
       'Listas de Entradas',
     ];
 
@@ -38,13 +38,15 @@ class ListsFilterBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected ? cSecondaryColor : null,
                 borderRadius: BorderRadius.circular(24.0),
-
+                border:
+                isSelected ? null : Border.all(color: cSecondaryColor),
               ),
               child: Text(
                 filters[index],
                 style: tNormal.copyWith(
                   color: isSelected ? cWhiteColor : cBlackColor,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
