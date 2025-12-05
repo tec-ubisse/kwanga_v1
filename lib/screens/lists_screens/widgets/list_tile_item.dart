@@ -15,19 +15,17 @@ class ListTileItem extends ConsumerWidget {
   final bool isSelected;
   final bool isEditable;
 
-  const ListTileItem(
-      this.onTap,
-      this.onLongPress, {
-        super.key,
-        required this.isEditable,
-        required this.listModel,
-        required this.isSelected,
-        required this.canViewChildren,
-      });
+  const ListTileItem({
+    super.key,
+    required this.listModel,
+    required this.canViewChildren,
+    required this.isSelected,
+    required this.isEditable,
+    this.onTap,
+    this.onLongPress,
+  });
 
-  bool get isActionList {
-    return normalizeListType(listModel.listType) == 'action';
-  }
+  bool get isActionList => normalizeListType(listModel.listType) == 'action';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,69 +40,74 @@ class ListTileItem extends ConsumerWidget {
         final completed = progress['completed'] ?? 0;
         final total = progress['total'] ?? 0;
 
-        return GestureDetector(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: ListTile(
-            tileColor: const Color(0xffEAEFF4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        return ListTile(
+          tileColor: const Color(0xffEAEFF4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Text(
+            listModel.description,
+            style: tTitle.copyWith(
+              color: isSelected ? cWhiteColor : cBlackColor,
+              fontSize: 18.0,
+              height: 1.2,
             ),
-            title: Text(
-              listModel.description,
-              style: tTitle.copyWith(
-                color: isSelected ? cWhiteColor : cBlackColor,
-                fontSize: 18.0,
-                height: 1.2,
-              ),
-            ),
-            subtitle: isEditable
-                ? Row(
-              spacing: 8.0,
-              children: [
-                if (isActionList && total > 0)
-                  SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      value: completed / total,
-                      backgroundColor: cSecondaryColor.withAlpha(50),
-                      color: cSecondaryColor.withAlpha(200),
-                    ),
-                  ),
-                Text(
-                  isActionList
-                      ? '$completed / $total concluídas'
-                      : 'Lista de Entradas',
-                  style: tNormal.copyWith(
-                    color: isSelected ? cWhiteColor : Colors.grey[700],
+          ),
+          subtitle: isEditable
+              ? Row(
+            spacing: 8.0,
+            children: [
+              if (isActionList && total > 0)
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    value: completed / total,
+                    backgroundColor: cSecondaryColor.withAlpha(50),
+                    color: cSecondaryColor.withAlpha(200),
                   ),
                 ),
-              ],
-            )
-                : Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                normalized == 'action'
-                    ? "Lista de Acções"
-                    : "Lista de Entradas",
+              Text(
+                isActionList
+                    ? '$completed / $total concluídas'
+                    : 'Lista de Entradas',
                 style: tNormal.copyWith(
                   color: isSelected ? cWhiteColor : Colors.grey[700],
                 ),
               ),
+            ],
+          )
+              : Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              normalized == 'entry' ? "Lista de Entradas" : "Lista de Acções",
+              style: tNormal.copyWith(
+                color: isSelected ? cWhiteColor : Colors.grey[700],
+              ),
             ),
-            onTap: () async {
-              if (canViewChildren) {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ListTasksScreen(listModel: listModel),
-                  ),
-                );
-
-                ref.invalidate(taskProgressProvider(listModel.id));
-              }
-            },
           ),
+
+          onTap: () async {
+            try {
+              if (onTap != null) {
+                onTap!();
+              }
+            } catch (_) {
+            }
+
+            if (canViewChildren) {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ListTasksScreen(listModel: listModel),
+                ),
+              );
+              ref.invalidate(taskProgressProvider(listModel.id));
+            }
+          },
+
+          onLongPress: () {
+            if (onLongPress != null) onLongPress!();
+          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

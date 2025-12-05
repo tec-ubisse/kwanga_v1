@@ -48,10 +48,11 @@ class TaskScreen extends ConsumerWidget {
         actions: isSelectionMode
             ? [
           IconButton(
-            icon: const Icon(Icons.delete),
-            tooltip: 'Eliminar selecionadas',
-            onPressed: () =>
-                ref.read(tasksProvider.notifier).deleteSelected(),
+              icon: const Icon(Icons.delete),
+              tooltip: 'Eliminar selecionadas',
+              onPressed: () {
+                ref.read(tasksProvider.notifier).deleteSelected();
+              }
           ),
           IconButton(
             icon: const Icon(Icons.clear),
@@ -64,7 +65,9 @@ class TaskScreen extends ConsumerWidget {
         ]
             : [],
       ),
+
       drawer: isSelectionMode ? null : const CustomDrawer(),
+
       body: Padding(
         padding: defaultPadding,
         child: asyncTasks.when(
@@ -91,13 +94,13 @@ class TaskScreen extends ConsumerWidget {
                 tasks: tasksFiltered,
                 lists: lists,
                 selectedButton: selectedButton,
+                selectedTaskIds: selectedTaskIds, // <-- ADICIONAR AQUI
                 onSelectButton: (index) =>
                     ref.read(taskFilterProvider.notifier).setFilter(index),
                 onDelete: (task) =>
                     ref.read(tasksProvider.notifier).deleteTask(task.id),
                 onToggleComplete: (task, newValue) =>
-                    ref.read(tasksProvider.notifier)
-                        .updateTaskStatus(task.id, newValue == 1),
+                    ref.read(tasksProvider.notifier).updateTaskStatus(task.id, newValue == 1),
                 onUpdate: (task) async {
                   final list = lists.firstWhere(
                         (l) => l.id == task.listId,
@@ -119,18 +122,37 @@ class TaskScreen extends ConsumerWidget {
                     ),
                   );
                 },
-                onLongPressTask: null,
-                onTapTask: (task, _) {
+                onLongPressTask: (task) {
+                  final selNotifier = ref.read(selectedTasksProvider.notifier);
+                  final modeNotifier = ref.read(taskSelectionModeProvider.notifier);
+
+                  if (!isSelectionMode) modeNotifier.enable();
+                  selNotifier.toggle(task.id);
+                },
+                onTapTask: (task, completed) {
+                  final selNotifier = ref.read(selectedTasksProvider.notifier);
+
+                  if (isSelectionMode) {
+                    selNotifier.toggle(task.id);
+
+                    if (ref.read(selectedTasksProvider).isEmpty) {
+                      ref.read(taskSelectionModeProvider.notifier).disable();
+                    }
+                    return;
+                  }
+
                   ref.read(tasksProvider.notifier)
-                      .updateTaskStatus(task.id, task.completed == 0);
+                      .updateTaskStatus(task.id, completed == 0);
                 },
               );
+
             },
-            loading: () =>
-            const Center(child: CircularProgressIndicator()),
+
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, stack) =>
                 Center(child: Text('Erro a carregar listas: $err')),
           ),
+
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) =>
               Center(child: Text('Erro a carregar tarefas: $err')),

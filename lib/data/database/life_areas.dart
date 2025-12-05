@@ -1,0 +1,68 @@
+import 'package:kwanga/models/life_area_model.dart';
+
+final List<LifeAreaModel> initialLifeAreas = [
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Acadêmica',
+    iconPath: 'university',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Profissional',
+    iconPath: 'professional',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Carreira',
+    iconPath: 'career',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Networking',
+    iconPath: 'networking',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Família',
+    iconPath: 'family',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Financeira',
+    iconPath: 'finances',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Saúde',
+    iconPath: 'health',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Emocional',
+    iconPath: 'emotion',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
+];

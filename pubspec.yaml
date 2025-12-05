@@ -46,6 +46,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   flutter_riverpod: 3.0.3
   riverpod: 3.0.3
+  percent_indicator: ^4.2.5
 #  shared_preferences: ^2.5.3
 
 
@@ -75,6 +76,8 @@ flutter:
   assets:
      - assets/icons/
      - assets/menu/
+     - assets/new_icons/
+     - assets/gifs/
      - .env
      - assets/
   #   - images/a_dot_ham.jpeg

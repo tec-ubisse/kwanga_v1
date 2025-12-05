@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/providers/auth_provider.dart';
+import 'package:kwanga/screens/lists_screens/lists_screen.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
-import 'package:kwanga/screens/task_screens/task_screen.dart';
 import 'package:kwanga/widgets/connection_wrapper.dart';
 
 import 'data/database/list_dao.dart';
@@ -52,7 +52,7 @@ class MyApp extends ConsumerWidget {
         ),
         data: (user) {
           if (user != null) {
-            return const ConnectionWrapper(child: TaskScreen());
+            return const ConnectionWrapper(child: ListsScreen(listType: 'entry'));
           } else {
             return const LoginScreen();
           }

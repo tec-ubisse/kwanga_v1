@@ -15,7 +15,12 @@ class ListTasksScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final message = listModel.listType == 'entry'
+        ? 'Nenhum item de entrada nesta lista.'
+        : 'Nenhuma tarefa nesta lista.';
+
     final tasks = ref.watch(tasksByListProvider(listModel.id));
+    final listType = listModel.listType;
 
     Future<void> deleteTask(TaskModel task) async {
       final confirm = await showDialog<bool>(
@@ -44,6 +49,7 @@ class ListTasksScreen extends ConsumerWidget {
 
       if (confirm == true) {
         await ref.read(tasksProvider.notifier).deleteTask(task.id);
+        ref.invalidate(tasksProvider);
       }
     }
 
@@ -52,33 +58,35 @@ class ListTasksScreen extends ConsumerWidget {
 
     return PopScope(
       canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) {
-            final total = tasks.length;
-            final completed = tasks.where((t) => t.completed == 1).length;
-
-            Navigator.pop(context, {
-              'completed': completed,
-              'total': total,
-            });
-          }
-        },
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.pop(context, {'completed': completed, 'total': total});
+        }
+      },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: cMainColor,
           foregroundColor: cWhiteColor,
           title: Text(listModel.description),
         ),
+
         floatingActionButton: FloatingActionButton(
           backgroundColor: cSecondaryColor,
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CreateTaskScreen(listModel: listModel),
-            ),
-          ),
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreateTaskScreen(listModel: listModel),
+              ),
+            );
+
+            if (result is TaskModel) {
+              ref.invalidate(tasksProvider);
+            }
+          },
           child: const Icon(Icons.add),
         ),
+
         body: Padding(
           padding: defaultPadding,
           child: Column(
@@ -87,19 +95,19 @@ class ListTasksScreen extends ConsumerWidget {
               if (total > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
+                  child: listType == 'action'
+                      ? Text(
                     '$completed / $total tarefas concluídas',
                     style: tNormal.copyWith(color: Colors.grey[700]),
-                  ),
+                  )
+                      : null,
                 ),
               Expanded(
                 child: tasks.isEmpty
                     ? Center(
                   child: Text(
-                    'Nenhuma tarefa nesta lista.',
-                    style: tNormal.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
+                    message,
+                    style: tNormal.copyWith(fontStyle: FontStyle.italic),
                   ),
                 )
                     : ListView.builder(
@@ -110,24 +118,36 @@ class ListTasksScreen extends ConsumerWidget {
                       key: ValueKey(task.id),
                       task: task,
                       onDelete: deleteTask,
-                      onUpdate: (updatedTask) => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => CreateTaskScreen(
-                            listModel: listModel,
-                            taskModel: updatedTask,
+                      isSelected: false,
+                      onUpdate: (taskToEdit) async {
+                        final updated = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (ctx) => CreateTaskScreen(
+                              listModel: listModel,
+                              taskModel: taskToEdit,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+
+                        if (updated is TaskModel) {
+                          ref.invalidate(tasksProvider);
+                        }
+                      },
+
                       onLongPress: () {
                         // multiple-selection logic
                       },
 
                       onToggleFinal: (t, status) {
-                        ref.read(tasksProvider.notifier).updateTaskStatus(t.id, status == 1);
+                        ref
+                            .read(tasksProvider.notifier)
+                            .updateTaskStatus(t.id, status == 1);
+
+                        ref.invalidate(tasksProvider);
                       },
                     );
                   },
-
                 ),
               ),
             ],

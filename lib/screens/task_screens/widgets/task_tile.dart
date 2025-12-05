@@ -6,14 +6,14 @@ import 'package:kwanga/models/task_model.dart';
 
 class TaskTile extends StatelessWidget {
   final TaskModel task;
+  final bool isSelected;
+
   final void Function(TaskModel) onDelete;
   final void Function(TaskModel) onUpdate;
-
-  /// Chamado quando o utilizador marca como concluída / desmarca
   final void Function(TaskModel, int) onToggleFinal;
 
-  final void Function()? onLongPress;
-  final void Function()? onTap;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onTap;
 
   const TaskTile({
     super.key,
@@ -21,6 +21,7 @@ class TaskTile extends StatelessWidget {
     required this.onDelete,
     required this.onUpdate,
     required this.onToggleFinal,
+    required this.isSelected,
     this.onLongPress,
     this.onTap,
   });
@@ -38,6 +39,7 @@ class TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = task.completed == 1;
+    final isAction = task.listType == 'action';
 
     return Slidable(
       key: ValueKey(task.id),
@@ -56,65 +58,81 @@ class TaskTile extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
-        onTap: onTap ??
-                () {
-              final newValue = isCompleted ? 0 : 1;
-              onToggleFinal(task, newValue);
-            },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
 
-        onLongPress: onLongPress,
-
-        title: Text(
-          task.description,
-          style: tNormal.copyWith(
-            decoration:
-            isCompleted ? TextDecoration.lineThrough : null,
-            color: isCompleted ? Colors.grey : Colors.black,
-          ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? cSecondaryColor.withOpacity(0.20)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
 
-        subtitle: _buildMeta(),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
-        trailing: Transform.scale(
-          scale: 1.4,
-          child: Checkbox(
-            value: isCompleted,
-            activeColor: cSecondaryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
+              onTap: () {
+                if (onTap != null) onTap!();
+              },
+
+              onLongPress: onLongPress,
+
+              title: Text(
+                task.description,
+                style: tNormal.copyWith(
+                  decoration: isCompleted ? TextDecoration.lineThrough : null,
+                  color: isCompleted ? Colors.grey : Colors.black,
+                ),
+              ),
+
+              subtitle: isAction ? _buildTaskInfo() : null,
+
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: cWhiteColor)
+                  : (isAction
+                  ? Transform.scale(
+                scale: 1.4,
+                child: Checkbox(
+                  value: isCompleted,
+                  activeColor: cSecondaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  side: const BorderSide(color: cBlackColor),
+                  onChanged: (_) {
+                    final newValue = isCompleted ? 0 : 1;
+                    onToggleFinal(task, newValue);
+                  },
+                ),
+              )
+                  : null),
             ),
-            side: const BorderSide(color: cBlackColor),
-            onChanged: (_) {
-              final newValue = isCompleted ? 0 : 1;
-              onToggleFinal(task, newValue);
-            },
-          ),
+
+            const Divider(),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMeta() {
+  Widget _buildTaskInfo() {
     final items = <Widget>[];
 
-    // listType
-    items.add(_meta(Icons.list, task.listType));
+    items.add(_taskInfo(Icons.list, task.listType));
 
-    // deadline
     final d = _formatDate(task.deadline);
-    if (d != null) items.add(_meta(Icons.calendar_month, d));
+    if (d != null) items.add(_taskInfo(Icons.calendar_month, d));
 
-    // time
     final t = _formatTime(task.time);
-    if (t != null) items.add(_meta(Icons.access_time, t));
+    if (t != null) items.add(_taskInfo(Icons.access_time, t));
 
-    // frequency
     if (task.frequency != null && task.frequency!.isNotEmpty) {
-      items.add(_meta(Icons.repeat, task.frequency!.join(", ")));
+      items.add(_taskInfo(Icons.repeat, task.frequency!.join(", ")));
     }
 
     return items.isEmpty
@@ -129,7 +147,7 @@ class TaskTile extends StatelessWidget {
     );
   }
 
-  Widget _meta(IconData icon, String text) {
+  Widget _taskInfo(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

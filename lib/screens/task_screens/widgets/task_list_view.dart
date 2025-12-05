@@ -12,7 +12,7 @@ class TaskListView extends StatelessWidget {
   final void Function(TaskModel) onDelete;
   final void Function(TaskModel) onUpdate;
   final void Function(TaskModel, int) onToggleComplete;
-
+  final Set<String> selectedTaskIds;
   final void Function(TaskModel)? onLongPressTask;
   final void Function(TaskModel, int) onTapTask;
 
@@ -22,6 +22,7 @@ class TaskListView extends StatelessWidget {
     required this.lists,
     required this.selectedButton,
     required this.onSelectButton,
+    required this.selectedTaskIds,
     required this.onDelete,
     required this.onToggleComplete,
     required this.onUpdate,
@@ -31,13 +32,10 @@ class TaskListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // <-- FILTROS REMOVIDOS: mostramos todas as tarefas recebidas em `tasks`.
-
-    // Separar pendentes e concluídas a partir da lista completa
+    // Separar pendentes e concluídas
     final pendingTasks = tasks.where((t) => t.completed == 0).toList();
     final completedTasks = tasks.where((t) => t.completed == 1).toList();
 
-    // Mensagem quando não há tasks
     if (tasks.isEmpty) {
       return const Center(
         child: Text('Você não tem tarefas ainda.'),
@@ -45,30 +43,26 @@ class TaskListView extends StatelessWidget {
     }
 
     Widget buildTile(TaskModel task) {
+      final isSelected = selectedTaskIds.contains(task.id);
+
       return TaskTile(
         key: ValueKey(task.id),
         task: task,
-
+        isSelected: isSelected, // <-- NOVO
         onDelete: onDelete,
         onUpdate: onUpdate,
-
-        // Chamado APENAS após animações (TaskTile controla tudo)
-        onToggleFinal: (t, status) {
-          onToggleComplete(t, status);
-        },
-
+        onToggleFinal: (t, status) => onToggleComplete(t, status),
         onLongPress: () => onLongPressTask?.call(task),
-
-        onTap: () => onTapTask(task, 0),
+        onTap: () => onTapTask(task, task.completed),
       );
     }
+
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
 
-        // Indicador simples de totais para toda a lista
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
@@ -80,34 +74,26 @@ class TaskListView extends StatelessWidget {
         Expanded(
           child: ListView(
             children: [
-              // -----------------------------
-              // TAREFAS PENDENTES (todas)
-              // -----------------------------
               Text("Tarefas", style: tSmallTitle),
               const SizedBox(height: 8),
 
               if (pendingTasks.isNotEmpty)
-                ...pendingTasks.map(buildTile).toList()
+                ...pendingTasks.map(buildTile)
               else
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     "Nenhuma tarefa pendente.",
-                    style: tNormal.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
+                    style: tNormal.copyWith(fontStyle: FontStyle.italic),
                   ),
                 ),
 
               const SizedBox(height: 24),
 
-              // -----------------------------
-              // TAREFAS CONCLUÍDAS (todas)
-              // -----------------------------
               if (completedTasks.isNotEmpty) ...[
                 Text("Concluídas", style: tSmallTitle),
                 const SizedBox(height: 8),
-                ...completedTasks.map(buildTile).toList(),
+                ...completedTasks.map(buildTile),
               ],
             ],
           ),

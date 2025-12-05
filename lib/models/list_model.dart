@@ -17,7 +17,7 @@ class ListModel {
     this.isSynced = false,
   }) : id = id ?? const Uuid().v4();
 
-  // 1. Adicionado o método copyWith
+  // Utility copyWith
   ListModel copyWith({
     String? id,
     int? userId,
@@ -36,7 +36,7 @@ class ListModel {
     );
   }
 
-  // 2. Adicionado o método toMap
+  // Utility toMap
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -48,6 +48,7 @@ class ListModel {
     };
   }
 
+  // Utility fromMap
   factory ListModel.fromMap(Map<String, dynamic> map) {
     return ListModel(
       id: map['id'] as String,

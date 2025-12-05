@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kwanga/screens/annual_goals_screens/annual_goals.dart';
 import 'package:kwanga/screens/configurations_screen/version_screen.dart';
 import 'package:kwanga/screens/development_screen.dart';
+import 'package:kwanga/screens/life_area_screens/read_life_areas_screen.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
-import 'package:kwanga/screens/task_screens/task_screen.dart';
+import 'package:kwanga/screens/long_term_vision_screens/visions_screen.dart';
+import 'package:kwanga/screens/monthly_goals_screens/monthly_goals_screen.dart';
+import 'package:kwanga/screens/projects_screens/projects_screen.dart';
 import '../custom_themes/blue_accent_theme.dart';
 import '../custom_themes/text_style.dart';
 import '../screens/configurations_screen/configurations_screen.dart';
@@ -32,7 +36,7 @@ class CustomDrawer extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        ' Kwanga Versão 1.9',
+                        ' Kwanga Versão 1.9.0',
                         style: tNormal.copyWith(
                           color: cWhiteColor,
                           fontSize: 12.0,
@@ -75,11 +79,11 @@ class CustomDrawer extends StatelessWidget {
             flex: 3,
             child: ListView(
               children: [
-                DrawerTile(
-                  tileName: 'Tarefas',
-                  tileImage: 'task',
-                  navigateTo: TaskScreen(),
-                ),
+                // DrawerTile(
+                //   tileName: 'Tarefas',
+                //   tileImage: 'task',
+                //   navigateTo: TaskScreen(),
+                // ),
                 DrawerTile(
                   tileName: 'Entradas',
                   tileImage: 'entry',
@@ -93,27 +97,32 @@ class CustomDrawer extends StatelessWidget {
                 DrawerTile(
                   tileName: 'Objectivos Anuais',
                   tileImage: 'yearly_goals',
-                  navigateTo: DevelopmentScreen(pageName: 'Objectivos Anuais'),
+                  navigateTo: AnnualGoals(),
                 ),
                 DrawerTile(
                   tileName: 'Objectivos Mensais',
                   tileImage: 'tasklist',
-                  navigateTo: DevelopmentScreen(pageName: 'Objectivos Mensais'),
-                ),
-                DrawerTile(
-                  tileName: 'Gerir Projectos',
-                  tileImage: 'projects',
-                  navigateTo: DevelopmentScreen(pageName: 'Gerir Projectos'),
-                ),
-                DrawerTile(
-                  tileName: 'Áreas da Vida',
-                  tileImage: 'life_area',
-                  navigateTo: DevelopmentScreen(pageName: 'Áreas da Vida'),
+                  navigateTo: MonthlyGoalsScreen(),
                 ),
                 DrawerTile(
                   tileName: 'Gerir Listas',
                   tileImage: 'to-do',
                   navigateTo: ViewLists(),
+                ),
+                DrawerTile(
+                  tileName: 'Gerir Projectos',
+                  tileImage: 'projects',
+                  navigateTo: ProjectsScreen(),
+                ),
+                DrawerTile(
+                  tileName: 'Visão a longo prazo',
+                  tileImage: 'eye',
+                  navigateTo: VisionsScreen(),
+                ),
+                DrawerTile(
+                  tileName: 'Áreas da Vida',
+                  tileImage: 'life_area',
+                  navigateTo: ReadLifeAreasScreen(),
                 ),
               ],
             ),

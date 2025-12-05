@@ -1,5 +1,6 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 
 class DatabaseHelper {
   static Database? _db;
@@ -13,17 +14,15 @@ class DatabaseHelper {
     return _db!;
   }
 
-  // Create all the Database tables here
   Future<Database> _initDatabase() async {
     final dbDir = await getDatabasesPath();
     final path = join(dbDir, 'kwanga_db.db');
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 13,
       onCreate: (db, version) async {
-
-        // Create Users table
+        // USERS
         await db.execute('''
           CREATE TABLE users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,18 +31,21 @@ class DatabaseHelper {
           )
         ''');
 
-        // Create Life Areas table
+        // LIFE AREAS
         await db.execute('''
           CREATE TABLE life_areas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
             designation TEXT NOT NULL,
             icon_path TEXT NOT NULL,
-            is_system INTEGER NOT NULL DEFAULT 0
+            is_system INTEGER NOT NULL DEFAULT 0,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0
           )
         ''');
 
-        // Default Life Areas
-        final predefinedAreas = [
+        // Predefined system life areas
+        final predefinedLifeAreas = [
           {'designation': 'Acadêmica', 'icon_path': 'university'},
           {'designation': 'Profissional', 'icon_path': 'professional'},
           {'designation': 'Networking', 'icon_path': 'networking'},
@@ -54,39 +56,44 @@ class DatabaseHelper {
           {'designation': 'Financeira', 'icon_path': 'finances'},
         ];
 
-        for (final area in predefinedAreas) {
+        for (final area in predefinedLifeAreas) {
           await db.insert('life_areas', {
+            'id': const Uuid().v4(),
+            'user_id': 0,
             'designation': area['designation'],
             'icon_path': area['icon_path'],
-            'is_system': 1, // immutable system areas
+            'is_system': 1,
+            'is_deleted': 0,
+            'is_synced': 1,
           });
         }
 
-        // Create Purposes table
+        // PURPOSES
         await db.execute('''
           CREATE TABLE purposes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,
-            life_area_id INTEGER NOT NULL,
+            life_area_id TEXT NOT NULL,
             FOREIGN KEY (life_area_id) REFERENCES life_areas(id) ON DELETE CASCADE
           )
         ''');
 
-        // Create LongTermVisions table
+        // VISIONS
         await db.execute('''
-        CREATE TABLE long_term_visions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL,
-          life_area_id INTEGER NOT NULL,
-          designation TEXT NOT NULL,
-          deadline TEXT NOT NULL,
-          status TEXT NOT NULL,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-          FOREIGN KEY (life_area_id) REFERENCES life_areas(id) ON DELETE CASCADE
-        )
-      ''');
+          CREATE TABLE visions (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            life_area_id TEXT NOT NULL,
+            conclusion INTEGER NOT NULL,
+            description TEXT NOT NULL,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (life_area_id) REFERENCES life_areas(id) ON DELETE CASCADE
+          )
+        ''');
 
-        // Create Lists table
+        // LISTS
         await db.execute('''
           CREATE TABLE lists (
             id TEXT PRIMARY KEY,
@@ -99,7 +106,7 @@ class DatabaseHelper {
           )
         ''');
 
-        // Create table tasks
+        // TASKS
         await db.execute('''
           CREATE TABLE tasks (
             id TEXT PRIMARY KEY,
@@ -115,11 +122,138 @@ class DatabaseHelper {
             FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
           )
         ''');
+
+        // ANNUAL GOALS
+        await db.execute('''
+          CREATE TABLE annual_goals (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            vision_id TEXT NOT NULL,
+            description TEXT NOT NULL,
+            year INTEGER NOT NULL,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (vision_id) REFERENCES visions(id) ON DELETE CASCADE
+          )
+        ''');
+
+        // MONTHLY GOALS
+        await db.execute('''
+          CREATE TABLE monthly_goals (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            annual_goals_id TEXT NOT NULL,
+            description TEXT NOT NULL,
+            month INTEGER NOT NULL,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (annual_goals_id) REFERENCES annual_goals(id) ON DELETE CASCADE
+          )
+        ''');
+
+        // PROJECTS
+        await db.execute('''
+          CREATE TABLE projects (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            monthly_goal_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            expected_result TEXT NOT NULL,
+            brainstorm_ideas TEXT,
+            first_action TEXT,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (monthly_goal_id) REFERENCES monthly_goals(id) ON DELETE CASCADE
+          )
+        ''');
+
+        // PROJECT ACTIONS — AGORA JÁ TEM order_index DESDE A CRIAÇÃO
+        await db.execute('''
+          CREATE TABLE project_actions (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            description TEXT NOT NULL,
+            is_done INTEGER NOT NULL DEFAULT 0,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            is_synced INTEGER NOT NULL DEFAULT 0,
+            order_index INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+          )
+        ''');
       },
+
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 5) {
-          await db.execute('ALTER TABLE lists ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
-          await db.execute('ALTER TABLE lists ADD COLUMN is_synced INTEGER NOT NULL DEFAULT 0');
+        // MIGRAÇÃO PARA PROJECTS (V10)
+        if (oldVersion < 10) {
+          final exists = await db.rawQuery(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='projects'");
+          if (exists.isEmpty) {
+            await db.execute('''
+              CREATE TABLE projects (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                monthly_goal_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                purpose TEXT NOT NULL,
+                expected_result TEXT NOT NULL,
+                brainstorm_ideas TEXT,
+                first_action TEXT,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                is_synced INTEGER NOT NULL DEFAULT 0
+              )
+            ''');
+          }
+        }
+
+        // MIGRAÇÃO PARA PROJECT_ACTIONS (V11)
+        if (oldVersion < 11) {
+          final exists = await db.rawQuery(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='project_actions'");
+          if (exists.isEmpty) {
+            await db.execute('''
+              CREATE TABLE project_actions (
+                id TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                description TEXT NOT NULL,
+                is_done INTEGER NOT NULL DEFAULT 0,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                is_synced INTEGER NOT NULL DEFAULT 0
+              )
+            ''');
+          }
+        }
+
+        // MIGRAÇÃO PARA ADICIONAR order_index (V12)
+        if (oldVersion < 12) {
+          final columns = await db.rawQuery("PRAGMA table_info(project_actions)");
+          final hasOrder = columns.any((c) => c['name'] == 'order_index');
+
+          if (!hasOrder) {
+            await db.execute(
+                "ALTER TABLE project_actions ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0"
+            );
+          }
+        }
+
+        // INICIALIZAR order_index (V13)
+        if (oldVersion < 13) {
+          final rows = await db.rawQuery('SELECT id FROM project_actions ORDER BY id ASC');
+
+          int index = 0;
+          for (final row in rows) {
+            final id = row['id'] as String;
+            await db.update(
+              'project_actions',
+              {'order_index': index},
+              where: 'id = ?',
+              whereArgs: [id],
+            );
+            index++;
+          }
         }
       },
     );

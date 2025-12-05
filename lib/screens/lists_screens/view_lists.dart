@@ -46,17 +46,48 @@ class ViewLists extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.delete),
             tooltip: 'Eliminar selecionadas',
-            onPressed: () {
-              listsNotifier.deleteSelected();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Listas eliminadas.')),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Confirmar eliminação"),
+                    content: const Text(
+                      "Tem certeza que pretende eliminar todas as listas selecionadas?",
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Cancelar"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text("Eliminar"),
+                      ),
+                    ],
+                  );
+                },
               );
+
+              if (confirmed == true) {
+                listsNotifier.deleteSelected();
+                selectionModeNotifier.disable();
+                selectedListsNotifier.clear();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Listas eliminadas com sucesso."),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
             },
           ),
         ]
             : null,
       ),
       drawer: isSelectionMode ? null : const CustomDrawer(),
+      backgroundColor: cWhiteColor,
       body: Padding(
         padding: defaultPadding,
         child: Column(
@@ -70,13 +101,12 @@ class ViewLists extends ConsumerWidget {
 
             Expanded(
               child: asyncLists.when(
-                loading: () =>
-                const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) =>
                     Center(child: Text('Ocorreu um erro: $err')),
 
                 data: (lists) {
-                  // --- APPLY FILTER HERE ---
+                  // Applying filters
                   final filtered = _applyFilter(lists, selectedFilter);
 
                   if (filtered.isEmpty) {
@@ -97,9 +127,12 @@ class ViewLists extends ConsumerWidget {
                       final list = filtered[index];
                       final isSelected = selectedIds.contains(list.id);
 
+                      // Tap toggles selection when in selection mode; otherwise opens editor
                       void handleTap() {
                         if (isSelectionMode) {
                           selectedListsNotifier.toggle(list.id);
+
+                          // if no items left selected -> exit selection mode
                           if (ref.read(selectedListsProvider).isEmpty) {
                             selectionModeNotifier.disable();
                           }
@@ -113,6 +146,7 @@ class ViewLists extends ConsumerWidget {
                         }
                       }
 
+                      // Long press enables selection mode and toggles the item
                       void handleLongPress() {
                         if (!isSelectionMode) {
                           selectionModeNotifier.enable();
@@ -134,60 +168,84 @@ class ViewLists extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: ListTileItem(
+                                  onTap: handleTap,
+                                  onLongPress: handleLongPress,
                                   canViewChildren: false,
                                   isEditable: false,
                                   listModel: list.copyWith(
-                                    listType:
-                                    normalizeListType(list.listType),
+                                    listType: normalizeListType(list.listType),
                                   ),
                                   isSelected: isSelected,
-                                  handleTap,
-                                  handleLongPress,
                                 ),
                               ),
                               isSelected
                                   ? const Padding(
                                 padding: EdgeInsets.only(right: 12.0),
-                                child: Icon(Icons.check,
-                                    color: Colors.white),
+                                child: Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                ),
                               )
                                   : PopupMenuButton<String>(
-                                borderRadius:
-                                BorderRadius.circular(24.0),
+                                borderRadius: BorderRadius.circular(24.0),
                                 elevation: 0,
-                                onSelected: (value) {
+                                onSelected: (value) async {
                                   if (value == 'edit') {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) =>
                                             CreateOrEditListScreen(
-                                                existingList: list),
+                                              existingList: list,
+                                            ),
                                       ),
                                     );
                                   } else if (value == 'delete') {
-                                    final removedList = list;
-
-                                    listsNotifier.deleteOne(list.id);
-
-                                    ScaffoldMessenger.of(context)
-                                        .clearSnackBars();
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                            'Lista eliminada.'),
-                                        duration:
-                                        const Duration(seconds: 4),
-                                        action: SnackBarAction(
-                                          label: 'Desfazer',
-                                          onPressed: () async {
-                                            await listsNotifier
-                                                .restoreList(
-                                                removedList);
-                                          },
-                                        ),
-                                      ),
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          title: const Text(
+                                            "Confirmar eliminação",
+                                          ),
+                                          content: Text(
+                                            "Tem a certeza que pretende eliminar a lista \"${list.description}\"?",
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(
+                                                    context,
+                                                    false,
+                                                  ),
+                                              child: const Text(
+                                                "Cancelar",
+                                              ),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(
+                                                    context,
+                                                    true,
+                                                  ),
+                                              child: const Text(
+                                                "Eliminar",
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
                                     );
+
+                                    if (confirmed == true) {
+                                      listsNotifier.deleteOne(list.id);
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Lista eliminada com sucesso."),
+                                          duration: Duration(seconds: 3),
+                                        ),
+                                      );
+                                    }
                                   }
                                 },
                                 itemBuilder: (context) => const [
@@ -231,10 +289,10 @@ class ViewLists extends ConsumerWidget {
     );
   }
 
-  // --- FILTER FUNCTION FIXED ---
+  // filter logic
   List<ListModel> _applyFilter(List<ListModel> lists, int filter) {
-    final normalized =
-    lists.map((l) => l.copyWith(listType: normalizeListType(l.listType)))
+    final normalized = lists
+        .map((l) => l.copyWith(listType: normalizeListType(l.listType)))
         .toList();
 
     if (filter == 1) {

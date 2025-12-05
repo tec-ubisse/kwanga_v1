@@ -9,7 +9,7 @@ import 'package:kwanga/screens/lists_screens/widgets/lists_filter_bar.dart';
 import 'package:kwanga/screens/task_screens/create_task_screen.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import 'package:kwanga/widgets/custom_drawer.dart';
-import 'package:kwanga/utils/list_type_utils.dart';   // <-- IMPORTANTE
+import 'package:kwanga/utils/list_type_utils.dart'; // <-- IMPORTANTE
 
 class ListsScreen extends ConsumerWidget {
   final String listType;
@@ -23,7 +23,8 @@ class ListsScreen extends ConsumerWidget {
     final selectedIds = ref.watch(selectedListsProvider);
 
     final normalizedIncomingType = normalizeListType(listType);
-    final String toDo = normalizedIncomingType == 'entry' ? 'Entrada' : 'Tarefa';
+    final String toDo =
+    normalizedIncomingType == 'entry' ? 'Entrada' : 'Tarefa';
 
     return Scaffold(
       appBar: AppBar(
@@ -35,6 +36,7 @@ class ListsScreen extends ConsumerWidget {
               : 'Entradas',
         ),
       ),
+      backgroundColor: cWhiteColor,
       drawer: const CustomDrawer(),
       body: Padding(
         padding: defaultPadding,
@@ -46,26 +48,31 @@ class ListsScreen extends ConsumerWidget {
                 onFilterSelected: (index) =>
                     ref.read(listFilterProvider.notifier).setFilter(index),
               ),
+
             Expanded(
               child: listsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro: $err')),
+                loading: () =>
+                const Center(child: CircularProgressIndicator()),
+                error: (err, stack) =>
+                    Center(child: Text('Erro: $err')),
                 data: (lists) {
                   List<ListModel> filteredLists;
 
                   /// ---- LIST TYPE EMPTY → Using Filter bar
                   if (listType.isEmpty) {
-                    final normalized =
-                    lists.map((l) => l.copyWith(
-                      listType: normalizeListType(l.listType),
-                    )).toList();
+                    final normalized = lists
+                        .map((l) => l.copyWith(
+                        listType: normalizeListType(l.listType)))
+                        .toList();
 
                     if (selectedFilter == 1) {
-                      filteredLists =
-                          normalized.where((l) => l.listType == 'action').toList();
+                      filteredLists = normalized
+                          .where((l) => l.listType == 'action')
+                          .toList();
                     } else if (selectedFilter == 2) {
-                      filteredLists =
-                          normalized.where((l) => l.listType == 'entry').toList();
+                      filteredLists = normalized
+                          .where((l) => l.listType == 'entry')
+                          .toList();
                     } else {
                       filteredLists = List.from(normalized)
                         ..sort((a, b) {
@@ -80,7 +87,8 @@ class ListsScreen extends ConsumerWidget {
                   else {
                     filteredLists = lists
                         .where((l) =>
-                    normalizeListType(l.listType) == normalizedIncomingType)
+                    normalizeListType(l.listType) ==
+                        normalizedIncomingType)
                         .toList();
                   }
 
@@ -88,7 +96,9 @@ class ListsScreen extends ConsumerWidget {
                     return Center(
                       child: Text(
                         'Nenhuma lista encontrada.',
-                        style: tNormal.copyWith(fontStyle: FontStyle.italic),
+                        style: tNormal.copyWith(
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     );
                   }
@@ -111,14 +121,15 @@ class ListsScreen extends ConsumerWidget {
                                 ? cTertiaryColor.withAlpha(30)
                                 : null,
                             child: ListTileItem(
+                              onTap: () {},
+                              onLongPress: () {},
                               isSelected: false,
                               isEditable: true,
                               canViewChildren: true,
                               listModel: list.copyWith(
-                                listType: normalizeListType(list.listType),
+                                listType:
+                                normalizeListType(list.listType),
                               ),
-                                  () {},
-                                  () {},
                             ),
                           ),
                         ),
@@ -128,13 +139,15 @@ class ListsScreen extends ConsumerWidget {
                 },
               ),
             ),
+
             if (normalizedIncomingType.isNotEmpty)
               GestureDetector(
                 onTap: () {
                   final lists = listsAsync.value ?? [];
                   final filtered = lists
                       .where((l) =>
-                  normalizeListType(l.listType) == normalizedIncomingType)
+                  normalizeListType(l.listType) ==
+                      normalizedIncomingType)
                       .toList();
 
                   if (filtered.isEmpty) {

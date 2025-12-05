@@ -70,10 +70,20 @@ class _CreateOrEditListScreenState
           description: _descriptionController.text.trim(),
         );
         await notifier.updateList(updatedList);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lista atualizada com sucesso!'),
+          ),
+        );
       } else {
         await notifier.addList(
           listType: normalizeListType(_selectedListType!),
           description: _descriptionController.text.trim(),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lista adicionada com sucesso!'),
+          ),
         );
       }
 
