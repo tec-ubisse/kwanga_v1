@@ -57,42 +57,48 @@ class _ProjectInfoBarState extends State<ProjectInfoBar> {
             spacing: 4.0,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // DETAILS
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Mês
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.monthText,
-                        style: tNormal.copyWith(fontSize: 14),
-                      ),
-                    ],
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today, size: 16),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            widget.monthText,
+                            style: tNormal.copyWith(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  // Tarefas
+
                   Row(
                     children: [
-                      const Icon(Icons.list_alt_outlined, size: 20),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.list_alt_outlined, size: 16),
+                      const SizedBox(width: 4),
                       Text(
                         "${widget.doneCount}/${widget.total} tarefas",
-                        style: tNormal.copyWith(fontSize: 14),
+                        style: tNormal.copyWith(fontSize: 12),
                       ),
                     ],
                   ),
-                  // Estado
+
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 20),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.access_time, size: 16),
+                      const SizedBox(width: 4),
                       Text(
-                        widget.doneCount == widget.total &&
-                                widget.total != 0
+                        widget.doneCount == widget.total && widget.total != 0
                             ? "Concluído"
                             : "Pendente",
-                        style: tNormal.copyWith(fontSize: 14),
+                        style: tNormal.copyWith(fontSize: 12),
                       ),
                     ],
                   ),
@@ -100,49 +106,57 @@ class _ProjectInfoBarState extends State<ProjectInfoBar> {
               ),
               if (isExpanded) ...[
                 const SizedBox(height: 12.0),
-                Column(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.list_alt, size: 20),
-                        Text(
-                          'Propósito',
-                          style: tSmallTitle.copyWith(
-                            fontSize: 12,
-                            color: cBlackColor,
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.list_alt, size: 16),
+                              Text(
+                                'Propósito',
+                                style: tSmallTitle.copyWith(
+                                  fontSize: 12,
+                                  color: cBlackColor,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      widget.project.purpose,
-                      style: tNormal.copyWith(fontSize: 12),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12.0),
-
-                // 3. Resultado Esperado (Visível apenas quando expandido)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.task_alt_outlined, size: 20),
-                        Text(
-                          'Resultado esperado',
-                          style: tSmallTitle.copyWith(
-                            fontSize: 12,
-                            color: cBlackColor,
+                          Text(
+                            widget.project.purpose,
+                            style: tNormal.copyWith(fontSize: 12),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    Text(
-                      widget.project.expectedResult,
-                      style: tNormal.copyWith(fontSize: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.task_alt_outlined, size: 16),
+                              Text(
+                                'Resultado esperado',
+                                style: tSmallTitle.copyWith(
+                                  fontSize: 12,
+                                  color: cBlackColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              widget.project.expectedResult,
+                              style: tNormal.copyWith(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -153,11 +167,9 @@ class _ProjectInfoBarState extends State<ProjectInfoBar> {
 
         const SizedBox(height: 8),
 
-        // ⭐️ Botão (Agora com lógica funcional)
         GestureDetector(
           onTap: () {
             setState(() {
-              // 1. Atualiza o estado (visibilidade)
               isExpanded = !isExpanded;
             });
           },

@@ -104,4 +104,16 @@ class ProjectActionsDao {
       whereArgs: [id],
     );
   }
+
+  Future<void> setActionCompletion(String actionId, bool isDone) async {
+    final db = await dbHelper.database;
+
+    await db.update(
+      'project_actions',
+      {'is_done': isDone ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [actionId],
+    );
+  }
+
 }

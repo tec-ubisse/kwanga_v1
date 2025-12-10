@@ -47,6 +47,7 @@ dependencies:
   flutter_riverpod: 3.0.3
   riverpod: 3.0.3
   percent_indicator: ^4.2.5
+  state_notifier: ^1.0.0
 #  shared_preferences: ^2.5.3
 
 

@@ -13,6 +13,7 @@ import 'package:kwanga/providers/annual_goals_provider.dart';
 import 'package:kwanga/providers/visions_provider.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
 import 'package:kwanga/providers/auth_provider.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 
 import '../../widgets/custom_drawer.dart';
 
@@ -255,26 +256,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
         },
       ),
 
-      // BOTÃO INFERIOR
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: 55,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cMainColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: _createProject,
-            child: const Text(
-              "Novo Projecto",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ),
-      ),
+      bottomNavigationBar: BottomActionBar(buttonText: 'Novo Projecto', onPressed: _createProject),
     );
   }
 }

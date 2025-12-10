@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 13,
+      version: 14, // ⭐ versão atual
       onCreate: (db, version) async {
         // USERS
         await db.execute('''
@@ -44,7 +44,7 @@ class DatabaseHelper {
           )
         ''');
 
-        // Predefined system life areas
+        // predefined life areas
         final predefinedLifeAreas = [
           {'designation': 'Acadêmica', 'icon_path': 'university'},
           {'designation': 'Profissional', 'icon_path': 'professional'},
@@ -106,7 +106,7 @@ class DatabaseHelper {
           )
         ''');
 
-        // TASKS
+        // TASKS (com linked_action_id incluído)
         await db.execute('''
           CREATE TABLE tasks (
             id TEXT PRIMARY KEY,
@@ -118,6 +118,7 @@ class DatabaseHelper {
             time INTEGER,
             frequency TEXT,
             completed INTEGER NOT NULL DEFAULT 0,
+            linked_action_id TEXT,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
           )
@@ -171,7 +172,7 @@ class DatabaseHelper {
           )
         ''');
 
-        // PROJECT ACTIONS — AGORA JÁ TEM order_index DESDE A CRIAÇÃO
+        // PROJECT ACTIONS
         await db.execute('''
           CREATE TABLE project_actions (
             id TEXT PRIMARY KEY,
@@ -186,73 +187,18 @@ class DatabaseHelper {
         ''');
       },
 
+      // database upgrade to include linked_action_id in task_model
       onUpgrade: (db, oldVersion, newVersion) async {
-        // MIGRAÇÃO PARA PROJECTS (V10)
-        if (oldVersion < 10) {
-          final exists = await db.rawQuery(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name='projects'");
-          if (exists.isEmpty) {
-            await db.execute('''
-              CREATE TABLE projects (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                monthly_goal_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                purpose TEXT NOT NULL,
-                expected_result TEXT NOT NULL,
-                brainstorm_ideas TEXT,
-                first_action TEXT,
-                is_deleted INTEGER NOT NULL DEFAULT 0,
-                is_synced INTEGER NOT NULL DEFAULT 0
-              )
-            ''');
-          }
-        }
+        if (oldVersion < 14) {
+          final columns =
+          await db.rawQuery("PRAGMA table_info(tasks);");
+          final hasLinked =
+          columns.any((c) => c['name'] == 'linked_action_id');
 
-        // MIGRAÇÃO PARA PROJECT_ACTIONS (V11)
-        if (oldVersion < 11) {
-          final exists = await db.rawQuery(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name='project_actions'");
-          if (exists.isEmpty) {
-            await db.execute('''
-              CREATE TABLE project_actions (
-                id TEXT PRIMARY KEY,
-                project_id TEXT NOT NULL,
-                description TEXT NOT NULL,
-                is_done INTEGER NOT NULL DEFAULT 0,
-                is_deleted INTEGER NOT NULL DEFAULT 0,
-                is_synced INTEGER NOT NULL DEFAULT 0
-              )
-            ''');
-          }
-        }
-
-        // MIGRAÇÃO PARA ADICIONAR order_index (V12)
-        if (oldVersion < 12) {
-          final columns = await db.rawQuery("PRAGMA table_info(project_actions)");
-          final hasOrder = columns.any((c) => c['name'] == 'order_index');
-
-          if (!hasOrder) {
+          if (!hasLinked) {
             await db.execute(
-                "ALTER TABLE project_actions ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0"
+              "ALTER TABLE tasks ADD COLUMN linked_action_id TEXT;",
             );
-          }
-        }
-
-        // INICIALIZAR order_index (V13)
-        if (oldVersion < 13) {
-          final rows = await db.rawQuery('SELECT id FROM project_actions ORDER BY id ASC');
-
-          int index = 0;
-          for (final row in rows) {
-            final id = row['id'] as String;
-            await db.update(
-              'project_actions',
-              {'order_index': index},
-              where: 'id = ?',
-              whereArgs: [id],
-            );
-            index++;
           }
         }
       },

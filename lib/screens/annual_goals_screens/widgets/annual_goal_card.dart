@@ -60,7 +60,7 @@ class AnnualGoalCard extends ConsumerWidget {
                       builder: (ctx) => KwangaDeleteDialog(
                         title: "Eliminar Objectivo Anual",
                         message:
-                            "Tem a certeza que pretende apagar o objectivo \"${g.description}\"? Esta acção é irreversível.",
+                            "Tem a certeza que pretende eliminar o objectivo \"${g.description}\"?\nEsta acção é irreversível.",
                       ),
                     );
 
@@ -72,17 +72,20 @@ class AnnualGoalCard extends ConsumerWidget {
                       ref.invalidate(annualGoalsProvider);
                     }
                   },
-                  backgroundColor: Colors.red,
+                  backgroundColor: cTertiaryColor,
                   foregroundColor: Colors.white,
                   icon: Icons.delete,
-                  label: "Apagar",
+                  label: "Eliminar",
                 ),
               ],
             ),
 
-            // CARD ORIGINAL (sem alterações)
+            // CARD ORIGINAL
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 24.0,
+              ),
               child: Row(
                 spacing: 4.0,
                 children: [

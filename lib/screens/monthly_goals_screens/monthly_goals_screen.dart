@@ -87,16 +87,24 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
           final allVisions = visions.value ?? [];
           final allAreas = lifeAreas.value ?? [];
 
+          /// --------------------------
+          /// FILTRAR APENAS PELO MÊS
+          /// --------------------------
           final filteredMonthlyGoals =
           goalsData.where((g) => g.month == selectedMonth).toList();
 
+          /// Criar mapa Area → lista de goals
           final Map<LifeAreaModel, List<MonthlyGoalModel>> areaGroups = {
             for (final area in allAreas) area: [],
           };
 
+          /// --------------------------
+          /// AGRUPAR TODOS OS GOALS
+          /// (não filtrar por ano)
+          /// --------------------------
           for (final goal in filteredMonthlyGoals) {
             final matchingAnnual = allAnnualGoals.firstWhere(
-                  (a) => a.id == goal.annualGoalsId && a.year == selectedYear,
+                  (a) => a.id == goal.annualGoalsId,
               orElse: () => AnnualGoalModel.empty(selectedYear),
             );
 
@@ -133,6 +141,22 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
             }
           }
 
+          /// --------------------------
+          /// ORDENAR:
+          /// 1) áreas com goals
+          /// 2) áreas sem goals
+          /// --------------------------
+          final sortedEntries = areaGroups.entries.toList()
+            ..sort((a, b) {
+              final hasA = a.value.isNotEmpty;
+              final hasB = b.value.isNotEmpty;
+
+              if (hasA && !hasB) return -1;
+              if (!hasA && hasB) return 1;
+
+              return a.key.designation.compareTo(b.key.designation);
+            });
+
           return Column(
             children: [
               Container(
@@ -163,10 +187,10 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    for (final entry in areaGroups.entries)
+                    for (final entry in sortedEntries)
                       MonthlyGoalAreaSection(
                         area: entry.key,
-                        goals: entry.value,
+                        goals: entry.value, // todos os goals da área
                         allAnnualGoals: allAnnualGoals,
                         visions: allVisions,
                         selectedYear: selectedYear,
@@ -212,8 +236,10 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text("Novo Objectivo Mensal",
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              "Novo Objectivo Mensal",
+              style: TextStyle(color: Colors.white),
+            ),
             onPressed: () async {
               await Navigator.push(
                 context,

@@ -26,7 +26,7 @@ class GoalsByVision extends ConsumerWidget {
     return Scaffold(
       backgroundColor: cWhiteColor,
       appBar: AppBar(
-        title: Text("Projecto - ${area.designation}"),
+        title: Text("Área: ${area.designation}"),
         backgroundColor: cMainColor,
         foregroundColor: Colors.white,
       ),

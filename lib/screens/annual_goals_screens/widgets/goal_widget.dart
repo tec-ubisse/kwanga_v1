@@ -85,10 +85,10 @@ class GoalWidget extends ConsumerWidget {
                     ref.invalidate(annualGoalsProvider);
                   }
                 },
-                backgroundColor: Colors.red,
+                backgroundColor: cTertiaryColor,
                 foregroundColor: Colors.white,
                 icon: Icons.delete,
-                label: "Apagar",
+                label: "Eliminar",
               ),
             ],
           ),

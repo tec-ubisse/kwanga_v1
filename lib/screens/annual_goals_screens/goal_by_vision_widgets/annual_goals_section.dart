@@ -37,51 +37,38 @@ class AnnualGoalsSection extends StatelessWidget {
 
         // TITLE
         Padding(
-          padding: const EdgeInsets.fromLTRB(24.0, 12.0, 0, 0),
+          padding: const EdgeInsets.fromLTRB(24.0, 12.0, 0, 12),
           child: Text("Objectivos Anuais",
               style: tSmallTitle.copyWith(fontSize: 18)),
         ),
 
-        const SizedBox(height: 16),
-
         // BODY
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white60,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    for (final year in years) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(
-                          year.toString(),
-                          style: tSmallTitle.copyWith(
-                            fontSize: 18,
-                            color: Colors.grey[800],
-                          ),
-                        ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                for (final year in years) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      year.toString(),
+                      style: tSmallTitle.copyWith(
+                        fontSize: 18,
+                        color: Colors.grey[800],
                       ),
+                    ),
+                  ),
 
-                      GoalsForYear(
-                        goals: filteredGoals,
-                        year: year,
-                      ),
+                  GoalsForYear(
+                    goals: filteredGoals,
+                    year: year,
+                  ),
 
-                      const SizedBox(height: 16),
-                    ],
-                  ],
-                ),
-              ),
+                  const SizedBox(height: 16),
+                ],
+              ],
             ),
           ),
         ),

@@ -5,7 +5,7 @@ import 'package:kwanga/providers/monthly_goals_provider.dart';
 import 'package:kwanga/providers/project_actions_provider.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/screens/projects_screens/widgets/no_tasks_project_card.dart';
+import 'package:kwanga/screens/projects_screens/cards/no_tasks_project_card.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/utils/date_utils.dart';
 import 'widgets/project_header.dart';

@@ -15,7 +15,6 @@ import '../annual_goals_screens/goals_by_vision.dart';
 import 'controllers/visions_aggregator_provider.dart';
 import 'create_vision_screen.dart';
 import 'widgets/vision_widget.dart';
-import 'widgets/no_vision_widget.dart';
 
 class VisionsScreen extends ConsumerStatefulWidget {
   const VisionsScreen({super.key});
@@ -45,7 +44,7 @@ class _VisionsScreenState extends ConsumerState<VisionsScreen> {
       data: (data) {
         final int currentYear = DateTime.now().year;
 
-        // Ano inicial e intervalo de anos
+        // initial year
         final int minYear = currentYear + 3;
         final int maxYear = minYear + 2;
 

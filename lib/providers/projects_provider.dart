@@ -6,6 +6,7 @@ import 'package:kwanga/data/database/projects_dao.dart';
 
 import 'auth_provider.dart';
 
+
 final projectsProvider =
 AsyncNotifierProvider<ProjectsNotifier, List<ProjectModel>>(() {
   return ProjectsNotifier();
@@ -92,3 +93,6 @@ class ProjectsNotifier extends AsyncNotifier<List<ProjectModel>> {
     ]);
   }
 }
+
+
+

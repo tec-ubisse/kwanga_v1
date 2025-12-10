@@ -109,7 +109,7 @@ class KwangaDeleteDialog extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      "Apagar",
+                      "Eliminar",
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white,

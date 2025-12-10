@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
-import '../../data/database/life_areas.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import '../../models/life_area_model.dart';
-import '../../widgets/buttons/main_button.dart';
 
 class CreateLifeAreaScreen extends ConsumerStatefulWidget {
   final LifeAreaModel? areaToEdit;
@@ -32,34 +31,17 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
     if (widget.areaToEdit != null) {
       _controller.text = widget.areaToEdit!.designation;
 
-      // SE FOR ÍCONE DO SISTEMA
-      if (widget.areaToEdit!.isSystem) {
-        final name = widget.areaToEdit!.iconPath.replaceAll('.png', '').trim();
+      // Extrai o número do ícone do path
+      // Exemplo: "assets/icons/5.png" → index = 4 (grid começa em 0)
+      final iconPath = widget.areaToEdit!.iconPath;
+      final match = RegExp(r'(\d+)\.png').firstMatch(iconPath);
 
-        final index = initialLifeAreas.indexWhere(
-              (x) => x.iconPath == name,
-        );
-
-        if (index != -1) {
-          _selectedIconIndex = index;
-        }
-      }
-
-      // SE FOR ÍCONE DO UTILIZADOR: extrai filename
-      else {
-        final filename = widget.areaToEdit!.iconPath.split("/").last;
-
-        // seus ícones user são numerados de 1 até N → 1.png, 2.png...
-        final raw = filename.replaceAll(".png", "");
-        final index = int.tryParse(raw);
-
-        if (index != null) {
-          _selectedIconIndex = index - 1; // grid começa no 0
-        }
+      if (match != null) {
+        final iconNumber = int.parse(match.group(1)!);
+        _selectedIconIndex = iconNumber - 1; // Converte para índice do grid (0-based)
       }
     }
   }
-
 
   @override
   void dispose() {
@@ -80,12 +62,13 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
       final iconPath = 'assets/icons/${_selectedIconIndex! + 1}.png';
 
       if (widget.areaToEdit == null) {
+        // MODO CRIAR
         await ref.read(lifeAreasProvider.notifier).addLifeArea(
           designation: _controller.text.trim(),
           iconPath: iconPath,
         );
       } else {
-        // 🟡 MODO EDITAR → construir o objeto completo
+        // MODO EDITAR
         final updated = widget.areaToEdit!.copyWith(
           designation: _controller.text.trim(),
           iconPath: iconPath,
@@ -180,77 +163,67 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
       appBar: AppBar(
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
-        title: const Text('Nova Área da Vida'),
+        title: Text(isEditing ? 'Editar Área da Vida' : 'Nova Área da Vida'),
       ),
       backgroundColor: cWhiteColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: LayoutBuilder(
-            builder: (_, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Digite a área da vida',
-                              style: tTitle.copyWith(color: cMainColor)),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _controller,
-                            maxLines: 1,
-                            decoration: decoration.copyWith(
-                              hintText: 'Nova área da vida',
-                              hintStyle: tNormal.copyWith(
-                                color: cBlackColor.withAlpha(60),
-                              ),
-                            ),
-                            validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                                ? 'Este campo é obrigatório'
-                                : null,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Selecione o ícone',
-                            style: tTitle.copyWith(color: cMainColor),
-                          ),
-                          if (_showIconError)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8, top: 8),
-                              child: Text(
-                                'Deve escolher um ícone',
-                                style: tSmallTitle.copyWith(
-                                  color: errorColor,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          // grid sem borda geral estranha
-                          _buildIconGrid(context),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: _isSaving ? null : _saveLifeArea,
-                            child: MainButton(
-                              buttonText: _isSaving
-                                  ? (isEditing ? 'Atualizando...' : 'Salvando...')
-                                  : (isEditing ? 'Atualizar' : 'Salvar'),
-                            ),
-                          ),
-                        ],
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Digite a área da vida',
+                  style: tTitle.copyWith(color: cMainColor),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _controller,
+                  maxLines: 1,
+                  decoration: decoration.copyWith(
+                    hintText: 'Nova área da vida',
+                    hintStyle: tNormal.copyWith(
+                      color: cBlackColor.withAlpha(60),
+                    ),
+                  ),
+                  validator: (value) =>
+                  (value == null || value.trim().isEmpty)
+                      ? 'Este campo é obrigatório'
+                      : null,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Selecione o ícone',
+                  style: tTitle.copyWith(color: cMainColor),
+                ),
+                if (_showIconError)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: Text(
+                      'Deve escolher um ícone',
+                      style: tSmallTitle.copyWith(
+                        color: errorColor,
+                        fontSize: 12,
                       ),
                     ),
                   ),
+                const SizedBox(height: 16),
+                // 🟢 AQUI ESTAVA FALTANDO - Exibir o grid de ícones
+                Expanded(
+                  child: _buildIconGrid(context),
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ),
+      ),
+      bottomNavigationBar: BottomActionBar(
+        buttonText: _isSaving
+            ? (isEditing ? 'Atualizando...' : 'Salvando...')
+            : (isEditing ? 'Atualizar' : 'Salvar'),
+        onPressed: _isSaving ? null : () { _saveLifeArea(); },
       ),
     );
   }

@@ -10,7 +10,7 @@ import 'package:kwanga/screens/projects_screens/projects_screen.dart';
 import '../custom_themes/blue_accent_theme.dart';
 import '../custom_themes/text_style.dart';
 import '../screens/configurations_screen/configurations_screen.dart';
-import '../screens/lists_screens/view_lists.dart';
+import '../screens/lists_screens/manage_lists_screen.dart';
 import 'drawer_tile.dart';
 
 class CustomDrawer extends StatelessWidget {

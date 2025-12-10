@@ -6,7 +6,6 @@ import 'package:kwanga/models/annual_goal_model.dart';
 import 'package:kwanga/models/vision_model.dart';
 import 'package:kwanga/widgets/cards/kwanga_empty_card.dart';
 
-import 'monthly_goal_add_placeholder.dart';
 import 'monthly_goal_card.dart';
 
 class MonthlyGoalAreaSection extends StatelessWidget {
@@ -39,6 +38,7 @@ class MonthlyGoalAreaSection extends StatelessWidget {
       children: [
         const SizedBox(height: 12),
 
+        /// ---- Título da Área ----
         Row(
           children: [
             if (area.iconPath.isNotEmpty)
@@ -46,16 +46,18 @@ class MonthlyGoalAreaSection extends StatelessWidget {
                   ? Image.asset("assets/icons/${area.iconPath}.png", width: 24)
                   : Image.asset(area.iconPath, width: 24),
             const SizedBox(width: 8),
-            Text(area.designation),
+            Text(area.designation, style: const TextStyle(fontSize: 16)),
           ],
         ),
 
         const SizedBox(height: 8),
 
+        /// ---- Lista de Goals ----
         if (goals.isEmpty)
           KwangaEmptyCard(message: 'Sem objectivo definido para este mês.')
         else
           Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: goals.map((g) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
@@ -75,6 +77,7 @@ class MonthlyGoalAreaSection extends StatelessWidget {
     );
   }
 
+  /// Procurar o Annual Goal associado à área atual
   AnnualGoalModel? _findAnnualGoalForArea() {
     for (final annual in allAnnualGoals.where((a) => a.year == selectedYear)) {
       final vision = visions.firstWhere(

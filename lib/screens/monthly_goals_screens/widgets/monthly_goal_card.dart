@@ -3,6 +3,7 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/models/monthly_goal_model.dart';
 import 'package:kwanga/providers/monthly_goals_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kwanga/widgets/dialogs/kwanga_delete_dialog.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../../../custom_themes/text_style.dart';
@@ -35,10 +36,23 @@ class MonthlyGoalCard extends ConsumerWidget {
           icon: Icons.delete,
           label: "Eliminar",
           color: cTertiaryColor,
-          onTap: () {
-            ref.read(monthlyGoalsProvider.notifier).removeMonthlyGoal(goal.id);
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) {
+                return KwangaDeleteDialog(
+                  title: "Eliminar objetivo",
+                  message: "Tens certeza que desejas eliminar este objetivo mensal?",
+                );
+              },
+            );
+
+            if (confirmed == true) {
+              ref.read(monthlyGoalsProvider.notifier).removeMonthlyGoal(goal.id);
+            }
           },
         ),
+
       ],
       child: Container(
         padding: const EdgeInsets.all(16.0),

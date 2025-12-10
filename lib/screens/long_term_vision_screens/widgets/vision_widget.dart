@@ -89,7 +89,7 @@ class VisionWidget extends ConsumerWidget {
                 backgroundColor: cTertiaryColor,
                 foregroundColor: Colors.white,
                 icon: Icons.delete,
-                label: 'Remover',
+                label: 'Eliminar',
               ),
             ],
           ),

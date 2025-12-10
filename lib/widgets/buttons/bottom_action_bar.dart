@@ -3,7 +3,7 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 
 class BottomActionBar extends StatelessWidget {
   final String buttonText;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool showShadow;
   final EdgeInsets padding;
   final double borderRadius;
@@ -45,7 +45,7 @@ class BottomActionBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
             ),
-            onPressed: onPressed,
+            onPressed: onPressed, // Quando null, o botão fica desabilitado
             child: Text(
               buttonText,
               style: const TextStyle(

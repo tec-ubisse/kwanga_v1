@@ -5,7 +5,7 @@ import '../../../custom_themes/text_style.dart';
 import '../../../models/life_area_model.dart';
 import '../../../models/project_model.dart';
 
-import 'project_card.dart';
+import '../cards/project_card.dart';
 import '../../../widgets/cards/kwanga_empty_card.dart';
 
 class LifeAreaSection extends StatelessWidget {
