@@ -7,6 +7,7 @@ import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/providers/tasks_provider.dart';
 import 'package:kwanga/screens/task_screens/create_task_screen.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_tile.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 
 class ListTasksScreen extends ConsumerWidget {
   final ListModel listModel;
@@ -64,14 +65,15 @@ class ListTasksScreen extends ConsumerWidget {
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: cMainColor,
           foregroundColor: cWhiteColor,
           title: Text(listModel.description),
         ),
 
-        floatingActionButton: FloatingActionButton(
-          backgroundColor: cSecondaryColor,
+        bottomNavigationBar: BottomActionBar(
+          buttonText: 'Adicionar Tarefa',
           onPressed: () async {
             final result = await Navigator.push(
               context,
@@ -84,7 +86,6 @@ class ListTasksScreen extends ConsumerWidget {
               ref.invalidate(tasksProvider);
             }
           },
-          child: const Icon(Icons.add),
         ),
 
         body: Padding(
@@ -97,58 +98,58 @@ class ListTasksScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: listType == 'action'
                       ? Text(
-                    '$completed / $total tarefas concluídas',
-                    style: tNormal.copyWith(color: Colors.grey[700]),
-                  )
+                          '$completed / $total tarefas concluídas',
+                          style: tNormal.copyWith(color: Colors.grey[700]),
+                        )
                       : null,
                 ),
               Expanded(
                 child: tasks.isEmpty
                     ? Center(
-                  child: Text(
-                    message,
-                    style: tNormal.copyWith(fontStyle: FontStyle.italic),
-                  ),
-                )
+                        child: Text(
+                          message,
+                          style: tNormal.copyWith(fontStyle: FontStyle.italic),
+                        ),
+                      )
                     : ListView.builder(
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return TaskTile(
-                      key: ValueKey(task.id),
-                      task: task,
-                      onDelete: deleteTask,
-                      isSelected: false,
-                      onUpdate: (taskToEdit) async {
-                        final updated = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (ctx) => CreateTaskScreen(
-                              listModel: listModel,
-                              taskModel: taskToEdit,
-                            ),
-                          ),
-                        );
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = tasks[index];
+                          return TaskTile(
+                            key: ValueKey(task.id),
+                            task: task,
+                            onDelete: deleteTask,
+                            isSelected: false,
+                            onUpdate: (taskToEdit) async {
+                              final updated = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (ctx) => CreateTaskScreen(
+                                    listModel: listModel,
+                                    taskModel: taskToEdit,
+                                  ),
+                                ),
+                              );
 
-                        if (updated is TaskModel) {
-                          ref.invalidate(tasksProvider);
-                        }
-                      },
+                              if (updated is TaskModel) {
+                                ref.invalidate(tasksProvider);
+                              }
+                            },
 
-                      onLongPress: () {
-                        // multiple-selection logic
-                      },
+                            onLongPress: () {
+                              // multiple-selection logic
+                            },
 
-                      onToggleFinal: (t, status) {
-                        ref
-                            .read(tasksProvider.notifier)
-                            .updateTaskStatus(t.id, status == 1);
+                            onToggleFinal: (t, status) {
+                              ref
+                                  .read(tasksProvider.notifier)
+                                  .updateTaskStatus(t.id, status == 1);
 
-                        ref.invalidate(tasksProvider);
-                      },
-                    );
-                  },
-                ),
+                              ref.invalidate(tasksProvider);
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),

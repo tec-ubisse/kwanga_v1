@@ -67,7 +67,7 @@ class _CreateMonthlyGoalScreenState
     final annualGoals = ref.watch(annualGoalsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F1EB),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: cMainColor,
         title: Text(
@@ -78,7 +78,6 @@ class _CreateMonthlyGoalScreenState
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: annualGoals.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text("Erro: $e")),

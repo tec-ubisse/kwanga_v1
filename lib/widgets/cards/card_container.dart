@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../custom_themes/blue_accent_theme.dart';
+import '../../custom_themes/blue_accent_theme.dart';
 
 class CardContainer extends StatelessWidget {
   final Widget child;
@@ -11,7 +11,7 @@ class CardContainer extends StatelessWidget {
   const CardContainer({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
     this.margin = const EdgeInsets.only(bottom: 12),
     this.height,
   });

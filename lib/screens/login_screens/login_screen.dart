@@ -7,7 +7,7 @@ import 'package:kwanga/screens/login_screens/register_screen.dart';
 import 'package:kwanga/widgets/buttons/icon_button.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 import '../../models/user.dart';
-import '../../widgets/connection_wrapper.dart';
+import '../../services/connection_wrapper.dart';
 import '../task_screens/task_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {

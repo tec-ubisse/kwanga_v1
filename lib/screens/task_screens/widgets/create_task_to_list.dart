@@ -1,86 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/data/database/list_dao.dart';
-import 'package:kwanga/data/database/task_dao.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
-import 'package:kwanga/models/user.dart';
-import 'package:kwanga/screens/task_screens/list_task_screen.dart';
+
+import 'package:kwanga/providers/auth_provider.dart';
+import 'package:kwanga/providers/lists_provider.dart';
+import 'package:kwanga/providers/tasks_provider.dart';
+
 import 'package:kwanga/screens/task_screens/widgets/date_option_selector.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_switch_row.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 
-class CreateTaskToList extends StatefulWidget {
+class CreateTaskToList extends ConsumerStatefulWidget {
   final ListModel selectedList;
 
   const CreateTaskToList({super.key, required this.selectedList});
 
   @override
-  State<CreateTaskToList> createState() => _CreateTaskToListState();
+  ConsumerState<CreateTaskToList> createState() => _CreateTaskToListState();
 }
 
-class _CreateTaskToListState extends State<CreateTaskToList> {
+class _CreateTaskToListState extends ConsumerState<CreateTaskToList> {
   final _formKey = GlobalKey<FormState>();
-  final _listDao = ListDao();
-  final _taskDao = TaskDao();
-  final _userModel = UserModel(
-    id: 2025,
-    email: 'alberto.ubisse@techworks.com',
-    password: 'tech@123',
-  );
 
-  late Future<List<ListModel>> _listsFuture;
   String _taskDescription = '';
   DateTime? _selectedDate;
-  ListModel? _selectedList;
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
+
   String _selectedFrequency = 'Todos os dias';
   bool _reminderEnabled = false;
   bool _frequencyEnabled = false;
-  int? _userId;
-
-  @override
-  void initState() {
-    super.initState();
-    _listsFuture = _listDao.getAllByUser(_userId!);
-    _selectedList = widget.selectedList;
-  }
 
   void _onDateChanged(DateTime? date) => setState(() => _selectedDate = date);
-
   void _onTimePicked(TimeOfDay time) => setState(() => _selectedTime = time);
+  void _onFrequencySelected(String freq) => setState(() => _selectedFrequency = freq);
 
-  void _onFrequencySelected(String freq) =>
-      setState(() => _selectedFrequency = freq);
+  Future<void> _saveTask() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  Future<void> saveTask() async {
-    if (!_formKey.currentState!.validate() || _selectedList == null) return;
+    final user = ref.read(authProvider).value;
+    if (user?.id == null) return;
 
     final now = DateTime.now();
+
     final task = TaskModel(
+      userId: user!.id!,
+      listId: widget.selectedList.id,
+      listType: widget.selectedList.listType,
+      projectId: widget.selectedList.listType == "action"
+          ? null
+          : null, // externo, não é de projecto
+
       description: _taskDescription,
-      listType: _selectedList!.description,
-      listId: _selectedList!.id,
       deadline: _selectedDate,
-      frequency: [],
-      userId: _userModel.id!,
-      time: DateTime(
-        now.year,
-        now.month,
-        now.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
-      ),
+      time: DateTime(now.year, now.month, now.day, _selectedTime.hour, _selectedTime.minute),
+      frequency: _frequencyEnabled ? [_selectedFrequency] : [],
       completed: 0,
     );
 
-    await _taskDao.insert(task);
+    await ref.read(tasksProvider.notifier).addTask(task);
+
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => ListTasksScreen(listModel: widget.selectedList)),
-    );
+    Navigator.pop(context); // volta à lista
   }
 
   @override
@@ -91,103 +75,81 @@ class _CreateTaskToListState extends State<CreateTaskToList> {
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 9,
-            child: SafeArea(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
               child: SingleChildScrollView(
                 padding: defaultPadding,
-                child: FutureBuilder<List<ListModel>>(
-                  future: _listsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text(
-                          'Erro: ${snapshot.error}',
-                          style: const TextStyle(color: Colors.red),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // título
+                      Text(
+                        'Lista selecionada:',
+                        style: tNormal.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cMainColor,
                         ),
-                      );
-                    }
-                    final lists = snapshot.data ?? [];
-
-                    return Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Lista selecionada:',
-                            style: tNormal.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: cMainColor,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              widget.selectedList.description,
-                              style: tNormal,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            decoration: inputDecoration.copyWith(
-                              labelText: 'Descrição',
-                            ),
-                            maxLines: 3,
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Este campo é obrigatório'
-                                : null,
-                            onChanged: (v) => _taskDescription = v,
-                          ),
-                          const SizedBox(height: 12),
-                          DateOptionSelector(onDateChanged: _onDateChanged),
-                          const SizedBox(height: 12),
-                          TaskSwitchRow.reminder(
-                            enabled: _reminderEnabled,
-                            time: _selectedTime,
-                            onChanged: (v) =>
-                                setState(() => _reminderEnabled = v),
-                            onTimePicked: _onTimePicked,
-                          ),
-                          const SizedBox(height: 12),
-                          TaskSwitchRow.frequency(
-                            enabled: _frequencyEnabled,
-                            frequency: _selectedFrequency,
-                            onChanged: (v) =>
-                                setState(() => _frequencyEnabled = v),
-                            onFrequencySelected: _onFrequencySelected,
-                          ),
-                        ],
                       ),
-                    );
-                  },
+                      const SizedBox(height: 6),
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(widget.selectedList.description, style: tNormal),
+                      ),
+
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        decoration: inputDecoration.copyWith(labelText: 'Descrição'),
+                        maxLines: 3,
+                        validator: (v) =>
+                        v == null || v.trim().isEmpty ? 'Este campo é obrigatório' : null,
+                        onChanged: (v) => _taskDescription = v,
+                      ),
+
+                      const SizedBox(height: 20),
+                      DateOptionSelector(onDateChanged: _onDateChanged),
+                      const SizedBox(height: 20),
+
+                      TaskSwitchRow.reminder(
+                        enabled: _reminderEnabled,
+                        time: _selectedTime,
+                        onChanged: (v) => setState(() => _reminderEnabled = v),
+                        onTimePicked: _onTimePicked,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      TaskSwitchRow.frequency(
+                        enabled: _frequencyEnabled,
+                        frequency: _selectedFrequency,
+                        onChanged: (v) => setState(() => _frequencyEnabled = v),
+                        onFrequencySelected: _onFrequencySelected,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 24.0,
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: GestureDetector(
+                onTap: _saveTask,
+                child: MainButton(buttonText: 'Salvar'),
+              ),
             ),
-            child: GestureDetector(
-              onTap: saveTask,
-              child: MainButton(buttonText: 'Salvar'),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

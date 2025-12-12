@@ -107,7 +107,7 @@ class VisionWidget extends ConsumerWidget {
                       flex: 3,
                       child: Text(
                         vision.description,
-                        style: tNormal.copyWith(fontSize: 16),
+                        style: tNormal,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),

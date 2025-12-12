@@ -12,7 +12,7 @@ class KwangaEmptyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: cardDecoration.copyWith(color: Color(0xffEFEFEF)),
+      decoration: cardDecoration.copyWith(color: Color(0xffF8F6F3)),
       padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
       child: Row(
         children: [

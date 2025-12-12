@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/widgets/card_container.dart';
+import 'package:kwanga/widgets/cards/card_container.dart';
 
 class MonthlyGoalAddPlaceholder extends StatelessWidget {
   final VoidCallback onTap;

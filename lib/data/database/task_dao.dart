@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/data/database/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
-import 'dart:convert';
 
 class TaskDao {
   final databaseHelper = DatabaseHelper.instance;
@@ -12,26 +12,47 @@ class TaskDao {
   Future<void> insert(TaskModel task) async {
     final db = await databaseHelper.database;
 
+    // ✅ SIMPLIFICADO: Não usar copyWith para evitar perder dados
+    final map = task.toMap();
+    map['updated_at'] = DateTime.now().millisecondsSinceEpoch;
+
     await db.insert(
       'tasks',
-      task.toMap(),
+      map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
   // -------------------------------------------------------------
-  // SELECT BY USER
+  // GET BY ID
+  // -------------------------------------------------------------
+  Future<TaskModel?> getTaskById(String id) async {
+    final db = await databaseHelper.database;
+
+    final res = await db.query(
+      'tasks',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (res.isEmpty) return null;
+    return TaskModel.fromMap(res.first);
+  }
+
+  // -------------------------------------------------------------
+  // GET BY USER
   // -------------------------------------------------------------
   Future<List<TaskModel>> getTaskByUserId(int userId) async {
     final db = await databaseHelper.database;
 
-    final result = await db.query(
+    final res = await db.query(
       'tasks',
       where: 'user_id = ?',
       whereArgs: [userId],
+      orderBy: 'created_at DESC',
     );
 
-    return result.map((e) => _taskFromRow(e)).toList();
+    return res.map(TaskModel.fromMap).toList();
   }
 
   // -------------------------------------------------------------
@@ -40,23 +61,28 @@ class TaskDao {
   Future<int> updateTask(TaskModel task) async {
     final db = await databaseHelper.database;
 
-    return await db.update(
+    final updated = task.copyWith(updatedAt: DateTime.now());
+
+    return db.update(
       'tasks',
-      task.toMap(),
+      updated.toMap(),
       where: 'id = ?',
       whereArgs: [task.id],
     );
   }
 
   // -------------------------------------------------------------
-  // UPDATE STATUS ONLY
+  // UPDATE ONLY STATUS
   // -------------------------------------------------------------
   Future<int> updateTaskStatus(String taskId, int status) async {
     final db = await databaseHelper.database;
 
-    return await db.update(
+    return db.update(
       'tasks',
-      {'completed': status},
+      {
+        'completed': status,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
       where: 'id = ?',
       whereArgs: [taskId],
     );
@@ -67,86 +93,59 @@ class TaskDao {
   // -------------------------------------------------------------
   Future<int> deleteTask(String id) async {
     final db = await databaseHelper.database;
-
-    return await db.delete(
-      'tasks',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
   // -------------------------------------------------------------
-  // GET BY ID
-  // -------------------------------------------------------------
-  Future<TaskModel?> getTaskById(String id) async {
-    final db = await databaseHelper.database;
-
-    final result = await db.query(
-      'tasks',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
-    if (result.isEmpty) return null;
-    return _taskFromRow(result.first);
-  }
-
-  // -------------------------------------------------------------
-  // PARSE DB ROW INTO MODEL
-  // -------------------------------------------------------------
-  TaskModel _taskFromRow(Map<String, dynamic> row) {
-    return TaskModel(
-      id: row['id'],
-      userId: row['user_id'],
-      listId: row['list_id'],
-      description: row['description'],
-      listType: row['listType'], // atenção ao nome no DB
-      deadline: row['deadline'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(row['deadline'])
-          : null,
-      time: row['time'] != null
-          ? DateTime(0, 1, 1).add(Duration(milliseconds: row['time']))
-          : null,
-      frequency: row['frequency'] != null
-          ? List<String>.from(jsonDecode(row['frequency']))
-          : null,
-      completed: row['completed'],
-      linkedActionId: row['linked_action_id'],
-    );
-  }
-
-  // -------------------------------------------------------------
-  // GET TASKS BY LIST
+  // GET BY LIST (NORMAL LISTS)
   // -------------------------------------------------------------
   Future<List<TaskModel>> getTasksByListId(String listId) async {
     final db = await databaseHelper.database;
 
-    final result = await db.query(
+    final res = await db.query(
       'tasks',
       where: 'list_id = ?',
       whereArgs: [listId],
+      orderBy: 'created_at ASC',
     );
 
-    return result.map((e) => _taskFromRow(e)).toList();
+    return res.map(TaskModel.fromMap).toList();
   }
 
   // -------------------------------------------------------------
-  // GET TASKS BY LINKED ACTION
+  // GET BY PROJECT (ORDER BY order_index!)
+  // -------------------------------------------------------------
+  Future<List<TaskModel>> getTasksByProjectId(String projectId) async {
+    final db = await databaseHelper.database;
+
+    final res = await db.query(
+      'tasks',
+      where: 'project_id = ?',
+      whereArgs: [projectId],
+      orderBy: 'order_index ASC, created_at ASC',
+    );
+
+    return res.map(TaskModel.fromMap).toList();
+  }
+
+  // -------------------------------------------------------------
+  // GET BY LINKED ACTION
   // -------------------------------------------------------------
   Future<List<TaskModel>> getTasksByLinkedActionId(String actionId) async {
     final db = await databaseHelper.database;
 
-    final result = await db.query(
+    final res = await db.query(
       'tasks',
       where: 'linked_action_id = ?',
       whereArgs: [actionId],
+      orderBy: 'created_at ASC',
     );
 
-    return result.map((e) => _taskFromRow(e)).toList();
+    return res.map(TaskModel.fromMap).toList();
   }
 
   // -------------------------------------------------------------
-  // GET PROGRESS BY LIST (raw query)
+  // TASK PROGRESS
   // -------------------------------------------------------------
   Future<Map<String, int>> getTaskProgress(String listId) async {
     final db = await databaseHelper.database;
@@ -169,5 +168,25 @@ class TaskDao {
       'total': total ?? 0,
       'completed': completed ?? 0,
     };
+  }
+
+  // -------------------------------------------------------------
+  // UPDATE ORDER INDEX (para drag & drop)
+  // -------------------------------------------------------------
+  Future<int> updateOrderIndex({
+    required String taskId,
+    required int newIndex,
+  }) async {
+    final db = await databaseHelper.database;
+
+    return await db.update(
+      'tasks',
+      {
+        'order_index': newIndex,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [taskId],
+    );
   }
 }

@@ -2,35 +2,25 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
 import 'package:kwanga/screens/login_screens/login_screen.dart';
-import 'package:kwanga/widgets/connection_wrapper.dart';
+import 'package:kwanga/services/connection_wrapper.dart';
 
-import 'data/database/list_dao.dart';
+/// Apenas para migrações iniciais controladas
+import 'data/database/lists_dao.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
     await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint('ERRO CRÍTICO DE INICIALIZAÇÃO: \$e');
+  } catch (_) {
+    debugPrint("AVISO: Não foi possível carregar .env");
   }
 
-  await ListDao().normalizeAllListTypes();
-
-  final all = await ListDao().getAllByUser(1); // ou o ID do teu user
-  for (final l in all) {
-    debugPrint("LISTA: ${l.description}  |  TYPE: ${l.listType}");
-  }
-
-
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -47,15 +37,21 @@ class MyApp extends ConsumerWidget {
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        error: (error, stackTrace) => const Scaffold(
-          body: Center(child: Text('Ocorreu um erro.')),
+
+        error: (error, stack) => const Scaffold(
+          body: Center(child: Text("Ocorreu um erro ao iniciar.")),
         ),
+
         data: (user) {
           if (user != null) {
-            return const ConnectionWrapper(child: ListsScreen(listType: 'entry'));
-          } else {
-            return const LoginScreen();
+            // Utilizador autenticado → entra direto na lista "entry"
+            return const ConnectionWrapper(
+              child: ListsScreen(listType: 'entry'),
+            );
           }
+
+          // Sem login → vai para ecrã de autenticação
+          return const LoginScreen();
         },
       ),
     );

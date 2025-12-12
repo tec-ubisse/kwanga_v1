@@ -6,26 +6,26 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 
 import 'package:kwanga/models/project_model.dart';
+import 'package:kwanga/models/task_model.dart';
 
 import 'package:kwanga/providers/projects_provider.dart';
+import 'package:kwanga/providers/tasks_provider.dart';
 import 'package:kwanga/providers/monthly_goals_provider.dart';
 import 'package:kwanga/providers/annual_goals_provider.dart';
 import 'package:kwanga/providers/visions_provider.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
 import 'package:kwanga/providers/auth_provider.dart';
+
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
-
 import '../../widgets/custom_drawer.dart';
-
 import '../../widgets/dialogs/kwanga_delete_dialog.dart';
+
 import '../monthly_goals_screens/widgets/monthly_goal_year_dropdown.dart';
 import '../monthly_goals_screens/widgets/monthly_goal_month_dropdown.dart';
 
 import 'widgets/life_area_section.dart';
 import 'project_detail_screen.dart';
 import 'create_project_screen.dart';
-
-import '../../data/database/project_actions_dao.dart';
 
 class ProjectsScreen extends ConsumerStatefulWidget {
   const ProjectsScreen({super.key});
@@ -39,8 +39,6 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   late int selectedMonth;
   late final ScrollController _scrollController;
 
-  final ProjectActionsDao _actionsDao = ProjectActionsDao();
-  bool _loadingProgress = false;
   Map<String, double> _progressMap = {};
 
   @override
@@ -54,33 +52,21 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
 
   @override
   void dispose() {
-    try {
-      _scrollController.dispose();
-    } catch (_) {}
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _computeProgress(List<ProjectModel> projects) async {
-    _loadingProgress = true;
-    if (mounted) setState(() {});
+  void _computeProgress(List<ProjectModel> projects, List<TaskModel> allTasks) {
+    final map = <String, double>{};
 
-    try {
-      final entries = await Future.wait(
-        projects.map((p) async {
-          final actions = await _actionsDao.getActionsByProjectId(p.id);
-          final total = actions.length;
-          final done = actions.where((a) => a.isDone).length;
-          return MapEntry(p.id, total == 0 ? 0.0 : done / total);
-        }),
-      );
-
-      _progressMap = {for (var e in entries) e.key: e.value};
-    } catch (_) {
-      _progressMap = {};
+    for (final p in projects) {
+      final projTasks = allTasks.where((t) => t.projectId == p.id).toList();
+      final total = projTasks.length;
+      final done = projTasks.where((t) => t.completed == 1).length;
+      map[p.id] = total == 0 ? 0.0 : done / total;
     }
 
-    _loadingProgress = false;
-    if (mounted) setState(() {});
+    setState(() => _progressMap = map);
   }
 
   Future<void> _createProject() async {
@@ -94,7 +80,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   Future<void> _openProject(ProjectModel p) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: p,)),
+      MaterialPageRoute(builder: (_) => ProjectDetailScreen(project: p)),
     );
     ref.refresh(projectsProvider);
   }
@@ -102,9 +88,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   Future<void> _editProject(ProjectModel p) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => CreateProjectScreen(projectToEdit: p),
-      ),
+      MaterialPageRoute(builder: (_) => CreateProjectScreen(projectToEdit: p)),
     );
     ref.refresh(projectsProvider);
   }
@@ -128,13 +112,13 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
         );
       },
     ) ??
-        false; // caso feche o diálogo
+        false;
   }
-
 
   @override
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(projectsProvider);
+    final tasksAsync = ref.watch(tasksProvider);
 
     final monthlyGoalsAsync = ref.watch(monthlyGoalsProvider);
     final annualGoalsAsync = ref.watch(annualGoalsProvider);
@@ -144,7 +128,8 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     final auth = ref.watch(authProvider).value;
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F1EB),
+      // backgroundColor: const Color(0xffF4F1EB),
+      backgroundColor: cWhiteColor,
       appBar: AppBar(
         title: Text("Projectos", style: tTitle),
         backgroundColor: cMainColor,
@@ -159,7 +144,8 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
           if (monthlyGoalsAsync.isLoading ||
               annualGoalsAsync.isLoading ||
               visionsAsync.isLoading ||
-              lifeAreasAsync.isLoading) {
+              lifeAreasAsync.isLoading ||
+              tasksAsync.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -167,37 +153,33 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
             return const Center(child: Text("Usuário inválido."));
           }
 
+          final tasks = tasksAsync.value ?? [];
+          _computeProgress(projects, tasks);
+
           final monthlyGoals = monthlyGoalsAsync.value ?? [];
           final annualGoals = annualGoalsAsync.value ?? [];
           final visions = visionsAsync.value ?? [];
           final lifeAreas = lifeAreasAsync.value ?? [];
 
           final Map<String, List<ProjectModel>> projectsByArea = {
-            for (final area in lifeAreas) area.id: [],
+            for (final a in lifeAreas) a.id: [],
           };
 
-          for (final project in projects) {
-            // Monthly Goal
-            final mg = monthlyGoals.firstWhereOrNull((m) => m.id == project.monthlyGoalId);
+          for (final p in projects) {
+            final mg = monthlyGoals.firstWhereOrNull((m) => m.id == p.monthlyGoalId);
             if (mg == null || mg.month != selectedMonth) continue;
 
-            // Annual Goal
             final ag = annualGoals.firstWhereOrNull((a) => a.id == mg.annualGoalsId);
             if (ag == null || ag.year != selectedYear) continue;
 
-            // Vision
             final vision = visions.firstWhereOrNull((v) => v.id == ag.visionId);
             if (vision == null) continue;
 
-            // Área
             final area = lifeAreas.firstWhereOrNull((a) => a.id == vision.lifeAreaId);
             if (area == null) continue;
 
-            projectsByArea[area.id]!.add(project);
+            projectsByArea[area.id]!.add(p);
           }
-
-          // Progress bars
-          if (!_loadingProgress) _computeProgress(projects);
 
           final orderedAreas = [
             ...lifeAreas.where((a) => (projectsByArea[a.id]?.isNotEmpty ?? false)),
@@ -240,13 +222,11 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                         area: area,
                         projects: projectsByArea[area.id] ?? [],
                         progressMap: _progressMap,
-
                         onAdd: _createProject,
-                        onOpen: (p) => _openProject(p),
-                        onEdit: (p) => _editProject(p),
-                        onDelete: (p) => _deleteProject(p),
+                        onOpen: _openProject,
+                        onEdit: _editProject,
+                        onDelete: _deleteProject,
                       ),
-
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -256,7 +236,10 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
         },
       ),
 
-      bottomNavigationBar: BottomActionBar(buttonText: 'Novo Projecto', onPressed: _createProject),
+      bottomNavigationBar: BottomActionBar(
+        buttonText: 'Novo Projecto',
+        onPressed: _createProject,
+      ),
     );
   }
 }

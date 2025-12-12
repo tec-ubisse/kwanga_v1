@@ -22,7 +22,7 @@ class BottomActionBar extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white,
         boxShadow: showShadow
             ? [
           BoxShadow(

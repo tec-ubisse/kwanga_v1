@@ -9,7 +9,6 @@ import 'package:kwanga/screens/lists_screens/widgets/list_tile_item.dart';
 import 'package:kwanga/screens/lists_screens/widgets/lists_filter_bar.dart';
 import 'package:kwanga/widgets/buttons/floating_button.dart';
 import 'package:kwanga/widgets/custom_drawer.dart';
-import 'package:kwanga/utils/list_type_utils.dart';
 
 class ViewLists extends ConsumerWidget {
   const ViewLists({super.key});
@@ -173,7 +172,7 @@ class ViewLists extends ConsumerWidget {
                                   canViewChildren: false,
                                   isEditable: false,
                                   listModel: list.copyWith(
-                                    listType: normalizeListType(list.listType),
+                                    listType: list.listType,
                                   ),
                                   isSelected: isSelected,
                                 ),
@@ -292,7 +291,7 @@ class ViewLists extends ConsumerWidget {
   // filter logic
   List<ListModel> _applyFilter(List<ListModel> lists, int filter) {
     final normalized = lists
-        .map((l) => l.copyWith(listType: normalizeListType(l.listType)))
+        .map((l) => l.copyWith(listType: l.listType))
         .toList();
 
     if (filter == 1) {

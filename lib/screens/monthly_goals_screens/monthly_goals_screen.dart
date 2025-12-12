@@ -61,7 +61,7 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
     final auth = ref.watch(authProvider).value;
 
     return Scaffold(
-      backgroundColor: const Color(0xffF4F1EB),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
@@ -69,194 +69,198 @@ class _MonthlyGoalsScreenState extends ConsumerState<MonthlyGoalsScreen> {
       ),
       drawer: CustomDrawer(),
 
-      body: monthlyGoals.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text("Erro: $e")),
-        data: (goalsData) {
-          if (annualGoals.isLoading ||
-              visions.isLoading ||
-              lifeAreas.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (auth == null || auth.id == null) {
-            return const Center(child: Text("Usuário inválido."));
-          }
-
-          final allAnnualGoals = annualGoals.value ?? [];
-          final allVisions = visions.value ?? [];
-          final allAreas = lifeAreas.value ?? [];
-
-          /// --------------------------
-          /// FILTRAR APENAS PELO MÊS
-          /// --------------------------
-          final filteredMonthlyGoals =
-          goalsData.where((g) => g.month == selectedMonth).toList();
-
-          /// Criar mapa Area → lista de goals
-          final Map<LifeAreaModel, List<MonthlyGoalModel>> areaGroups = {
-            for (final area in allAreas) area: [],
-          };
-
-          /// --------------------------
-          /// AGRUPAR TODOS OS GOALS
-          /// (não filtrar por ano)
-          /// --------------------------
-          for (final goal in filteredMonthlyGoals) {
-            final matchingAnnual = allAnnualGoals.firstWhere(
-                  (a) => a.id == goal.annualGoalsId,
-              orElse: () => AnnualGoalModel.empty(selectedYear),
-            );
-
-            if (matchingAnnual.isEmpty) continue;
-
-            final matchingVision = allVisions.firstWhere(
-                  (v) => v.id == matchingAnnual.visionId,
-              orElse: () => VisionModel(
-                id: "",
-                userId: -1,
-                lifeAreaId: "",
-                conclusion: 0,
-                description: "",
-                isDeleted: false,
-                isSynced: false,
-              ),
-            );
-
-            final matchingArea = allAreas.firstWhere(
-                  (a) => a.id == matchingVision.lifeAreaId,
-              orElse: () => LifeAreaModel(
-                id: "",
-                userId: -1,
-                designation: "",
-                iconPath: "",
-                isSystem: false,
-                isDeleted: false,
-                isSynced: false,
-              ),
-            );
-
-            if (areaGroups.containsKey(matchingArea)) {
-              areaGroups[matchingArea]!.add(goal);
+      body: SafeArea(
+        child: monthlyGoals.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text("Erro: $e")),
+          data: (goalsData) {
+            if (annualGoals.isLoading ||
+                visions.isLoading ||
+                lifeAreas.isLoading) {
+              return const Center(child: CircularProgressIndicator());
             }
-          }
 
-          /// --------------------------
-          /// ORDENAR:
-          /// 1) áreas com goals
-          /// 2) áreas sem goals
-          /// --------------------------
-          final sortedEntries = areaGroups.entries.toList()
-            ..sort((a, b) {
-              final hasA = a.value.isNotEmpty;
-              final hasB = b.value.isNotEmpty;
+            if (auth == null || auth.id == null) {
+              return const Center(child: Text("Usuário inválido."));
+            }
 
-              if (hasA && !hasB) return -1;
-              if (!hasA && hasB) return 1;
+            final allAnnualGoals = annualGoals.value ?? [];
+            final allVisions = visions.value ?? [];
+            final allAreas = lifeAreas.value ?? [];
 
-              return a.key.designation.compareTo(b.key.designation);
-            });
+            /// --------------------------
+            /// FILTRAR APENAS PELO MÊS
+            /// --------------------------
+            final filteredMonthlyGoals =
+            goalsData.where((g) => g.month == selectedMonth).toList();
 
-          return Column(
-            children: [
-              Container(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-                  child: Row(
+            /// Criar mapa Area → lista de goals
+            final Map<LifeAreaModel, List<MonthlyGoalModel>> areaGroups = {
+              for (final area in allAreas) area: [],
+            };
+
+            /// --------------------------
+            /// AGRUPAR TODOS OS GOALS
+            /// (não filtrar por ano)
+            /// --------------------------
+            for (final goal in filteredMonthlyGoals) {
+              final matchingAnnual = allAnnualGoals.firstWhere(
+                    (a) => a.id == goal.annualGoalsId,
+                orElse: () => AnnualGoalModel.empty(selectedYear),
+              );
+
+              if (matchingAnnual.isEmpty) continue;
+
+              final matchingVision = allVisions.firstWhere(
+                    (v) => v.id == matchingAnnual.visionId,
+                orElse: () => VisionModel(
+                  id: "",
+                  userId: -1,
+                  lifeAreaId: "",
+                  conclusion: 0,
+                  description: "",
+                  isDeleted: false,
+                  isSynced: false,
+                ),
+              );
+
+              final matchingArea = allAreas.firstWhere(
+                    (a) => a.id == matchingVision.lifeAreaId,
+                orElse: () => LifeAreaModel(
+                  id: "",
+                  userId: -1,
+                  designation: "",
+                  iconPath: "",
+                  isSystem: false,
+                  isDeleted: false,
+                  isSynced: false,
+                ),
+              );
+
+              if (areaGroups.containsKey(matchingArea)) {
+                areaGroups[matchingArea]!.add(goal);
+              }
+            }
+
+            /// --------------------------
+            /// ORDENAR:
+            /// 1) áreas com goals
+            /// 2) áreas sem goals
+            /// --------------------------
+            final sortedEntries = areaGroups.entries.toList()
+              ..sort((a, b) {
+                final hasA = a.value.isNotEmpty;
+                final hasB = b.value.isNotEmpty;
+
+                if (hasA && !hasB) return -1;
+                if (!hasA && hasB) return 1;
+
+                return a.key.designation.compareTo(b.key.designation);
+              });
+
+            return Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: MonthlyGoalYearDropdown(
+                            selectedYear: selectedYear,
+                            onChanged: (y) => setState(() => selectedYear = y),
+                          ),
+                        ),
+                        Expanded(
+                          child: MonthlyGoalMonthDropdown(
+                            selectedMonth: selectedMonth,
+                            onChanged: (m) => setState(() => selectedMonth = m),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      Expanded(
-                        child: MonthlyGoalYearDropdown(
+                      for (final entry in sortedEntries)
+                        MonthlyGoalAreaSection(
+                          area: entry.key,
+                          goals: entry.value, // todos os goals da área
+                          allAnnualGoals: allAnnualGoals,
+                          visions: allVisions,
                           selectedYear: selectedYear,
-                          onChanged: (y) => setState(() => selectedYear = y),
-                        ),
-                      ),
-                      Expanded(
-                        child: MonthlyGoalMonthDropdown(
                           selectedMonth: selectedMonth,
-                          onChanged: (m) => setState(() => selectedMonth = m),
+                          onAdd: (annualGoal) async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CreateMonthlyGoalScreen(
+                                  presetMonth: selectedMonth,
+                                  presetAnnualGoal: annualGoal,
+                                ),
+                              ),
+                            );
+                          },
+                          onEdit: (goal) async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CreateMonthlyGoalScreen(
+                                  goalToEdit: goal,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
                     ],
                   ),
                 ),
-              ),
-
-              Expanded(
-                child: ListView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    for (final entry in sortedEntries)
-                      MonthlyGoalAreaSection(
-                        area: entry.key,
-                        goals: entry.value, // todos os goals da área
-                        allAnnualGoals: allAnnualGoals,
-                        visions: allVisions,
-                        selectedYear: selectedYear,
-                        selectedMonth: selectedMonth,
-                        onAdd: (annualGoal) async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CreateMonthlyGoalScreen(
-                                presetMonth: selectedMonth,
-                                presetAnnualGoal: annualGoal,
-                              ),
-                            ),
-                          );
-                        },
-                        onEdit: (goal) async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CreateMonthlyGoalScreen(
-                                goalToEdit: goal,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
 
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          height: 55,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cMainColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              "Novo Objectivo Mensal",
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CreateMonthlyGoalScreen(
-                    presetMonth: selectedMonth,
-                    presetAnnualGoal: null,
-                  ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            height: 55,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: cMainColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
+              ),
+              child: const Text(
+                "Novo Objectivo Mensal",
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CreateMonthlyGoalScreen(
+                      presetMonth: selectedMonth,
+                      presetAnnualGoal: null,
+                    ),
+                  ),
+                );
 
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeOut,
-              );
-            },
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                );
+              },
+            ),
           ),
         ),
       ),

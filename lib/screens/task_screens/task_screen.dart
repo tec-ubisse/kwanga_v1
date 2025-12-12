@@ -12,22 +12,6 @@ import 'package:kwanga/widgets/custom_drawer.dart';
 class TaskScreen extends ConsumerWidget {
   const TaskScreen({super.key});
 
-  String _norm(Object? v) {
-    if (v == null) return '';
-    return v.toString().trim().toLowerCase();
-  }
-
-  bool _isEntryList(ListModel l) {
-    final type = _norm(l.listType);
-    final desc = _norm(l.description);
-
-    return type.contains('entrada') ||
-        type.contains('inbox') ||
-        type == 'in' ||
-        desc.contains('entrada') ||
-        desc.contains('inbox');
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncTasks = ref.watch(tasksProvider);
@@ -48,15 +32,15 @@ class TaskScreen extends ConsumerWidget {
         actions: isSelectionMode
             ? [
           IconButton(
-              icon: const Icon(Icons.delete),
-              tooltip: 'Eliminar selecionadas',
-              onPressed: () {
-                ref.read(tasksProvider.notifier).deleteSelected();
-              }
+            icon: const Icon(Icons.delete),
+            tooltip: 'Eliminar selecionadas',
+            onPressed: () {
+              ref.read(tasksProvider.notifier).deleteSelected();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.clear),
-            tooltip: 'Cancelar selecção',
+            tooltip: 'Cancelar seleção',
             onPressed: () {
               ref.read(taskSelectionModeProvider.notifier).disable();
               ref.read(selectedTasksProvider.notifier).clear();
@@ -65,6 +49,7 @@ class TaskScreen extends ConsumerWidget {
         ]
             : [],
       ),
+      backgroundColor: Colors.white,
 
       drawer: isSelectionMode ? null : const CustomDrawer(),
 
@@ -77,11 +62,21 @@ class TaskScreen extends ConsumerWidget {
                 return const Center(child: Text('Utilizador não encontrado.'));
               }
 
-              final entryLists = lists.where(_isEntryList).toList();
-              final entryIds = entryLists.map((e) => e.id).toSet();
+              // ------------------------------------------------
+              // 1) Filtrar listas de acções reais
+              //    => excluir listas de projecto (isProject)
+              //    => excluir listas do tipo "entry"
+              // ------------------------------------------------
+              final actionLists = lists.where((l) =>
+              l.listType == "action" && l.isProject == false).toList();
 
+              final allowedListIds = actionLists.map((e) => e.id).toSet();
+
+              // ------------------------------------------------
+              // 2) Filtrar tarefas: só as que pertencem às listas ACTION reais
+              // ------------------------------------------------
               final tasksFiltered = tasks
-                  .where((t) => !entryIds.contains(_norm(t.listId)))
+                  .where((t) => allowedListIds.contains(t.listId))
                   .toList();
 
               if (tasksFiltered.isEmpty) {
@@ -94,13 +89,19 @@ class TaskScreen extends ConsumerWidget {
                 tasks: tasksFiltered,
                 lists: lists,
                 selectedButton: selectedButton,
-                selectedTaskIds: selectedTaskIds, // <-- ADICIONAR AQUI
+                selectedTaskIds: selectedTaskIds,
                 onSelectButton: (index) =>
                     ref.read(taskFilterProvider.notifier).setFilter(index),
+
                 onDelete: (task) =>
                     ref.read(tasksProvider.notifier).deleteTask(task.id),
+
                 onToggleComplete: (task, newValue) =>
-                    ref.read(tasksProvider.notifier).updateTaskStatus(task.id, newValue == 1),
+                    ref.read(tasksProvider.notifier).updateTaskStatus(
+                      task.id,
+                      newValue == 1,
+                    ),
+
                 onUpdate: (task) async {
                   final list = lists.firstWhere(
                         (l) => l.id == task.listId,
@@ -109,6 +110,7 @@ class TaskScreen extends ConsumerWidget {
                       userId: userId,
                       description: 'Lista desconhecida',
                       listType: '',
+                      isProject: false,
                     ),
                   );
 
@@ -122,18 +124,20 @@ class TaskScreen extends ConsumerWidget {
                     ),
                   );
                 },
-                onLongPressTask: (task) {
-                  final selNotifier = ref.read(selectedTasksProvider.notifier);
-                  final modeNotifier = ref.read(taskSelectionModeProvider.notifier);
 
-                  if (!isSelectionMode) modeNotifier.enable();
-                  selNotifier.toggle(task.id);
+                onLongPressTask: (task) {
+                  final sel = ref.read(selectedTasksProvider.notifier);
+                  final mode = ref.read(taskSelectionModeProvider.notifier);
+
+                  if (!isSelectionMode) mode.enable();
+                  sel.toggle(task.id);
                 },
+
                 onTapTask: (task, completed) {
-                  final selNotifier = ref.read(selectedTasksProvider.notifier);
+                  final sel = ref.read(selectedTasksProvider.notifier);
 
                   if (isSelectionMode) {
-                    selNotifier.toggle(task.id);
+                    sel.toggle(task.id);
 
                     if (ref.read(selectedTasksProvider).isEmpty) {
                       ref.read(taskSelectionModeProvider.notifier).disable();
@@ -145,7 +149,6 @@ class TaskScreen extends ConsumerWidget {
                       .updateTaskStatus(task.id, completed == 0);
                 },
               );
-
             },
 
             loading: () => const Center(child: CircularProgressIndicator()),

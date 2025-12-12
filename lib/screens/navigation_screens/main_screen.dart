@@ -13,17 +13,19 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: cMainColor,
-        foregroundColor: cWhiteColor,
-        title: Text(
-          'Kwanga',
-          style: tTitle.copyWith(fontWeight: FontWeight.w500),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: cMainColor,
+          foregroundColor: cWhiteColor,
+          title: Text(
+            'Kwanga',
+            style: tTitle.copyWith(fontWeight: FontWeight.w500),
+          ),
         ),
+        drawer: CustomDrawer(),
+        body: Center(child: Text('Kwanga'),),
       ),
-      drawer: CustomDrawer(),
-      body: Center(child: Text('Kwanga'),),
     );
   }
 }

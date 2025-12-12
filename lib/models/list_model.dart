@@ -7,12 +7,14 @@ class ListModel {
   final String description;
   final bool isDeleted;
   final bool isSynced;
+  final bool isProject;
 
   ListModel({
     String? id,
     required this.userId,
     required this.listType,
     required this.description,
+    required this.isProject,
     this.isDeleted = false,
     this.isSynced = false,
   }) : id = id ?? const Uuid().v4();
@@ -25,6 +27,7 @@ class ListModel {
     String? description,
     bool? isDeleted,
     bool? isSynced,
+    bool? isProject,
   }) {
     return ListModel(
       id: id ?? this.id,
@@ -33,6 +36,7 @@ class ListModel {
       description: description ?? this.description,
       isDeleted: isDeleted ?? this.isDeleted,
       isSynced: isSynced ?? this.isSynced,
+      isProject: isProject ?? this.isProject,
     );
   }
 
@@ -45,6 +49,7 @@ class ListModel {
       'description': description,
       'is_deleted': isDeleted ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
+      'is_project': isProject ? 1 : 0,
     };
   }
 
@@ -57,6 +62,7 @@ class ListModel {
       description: map['description'] as String,
       isDeleted: (map['is_deleted'] ?? 0) == 1,
       isSynced: (map['is_synced'] ?? 0) == 1,
+      isProject: (map['is_project'] ?? 0) == 1,
     );
   }
 }

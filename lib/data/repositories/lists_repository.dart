@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:kwanga/models/list_model.dart';
-import 'package:kwanga/data/database/list_dao.dart';
+import 'package:kwanga/data/database/lists_dao.dart';
 import 'package:kwanga/data/services/api_service.dart';
 
 class ListsRepository {

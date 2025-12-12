@@ -3,7 +3,7 @@ import 'package:kwanga/custom_themes/text_style.dart';
 
 class SelectProjectDialog extends StatelessWidget {
   final List projects;
-  final String currentProjectId;
+  final String? currentProjectId;
 
   const SelectProjectDialog({
     super.key,

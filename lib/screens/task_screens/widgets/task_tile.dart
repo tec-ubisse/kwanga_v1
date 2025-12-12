@@ -3,6 +3,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/task_model.dart';
+import 'package:kwanga/widgets/cards/card_container.dart';
 
 class TaskTile extends StatelessWidget {
   final TaskModel task;
@@ -58,43 +59,29 @@ class TaskTile extends StatelessWidget {
           ),
         ],
       ),
-
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-
-        decoration: BoxDecoration(
-          color: isSelected
-              ? cSecondaryColor.withOpacity(0.20)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-
+      child: CardContainer(
         child: Column(
           children: [
             ListTile(
               contentPadding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
-              onTap: () {
-                if (onTap != null) onTap!();
-              },
-
+              onTap: onTap,
               onLongPress: onLongPress,
 
               title: Text(
                 task.description,
                 style: tNormal.copyWith(
-                  decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  color: isCompleted ? Colors.grey : Colors.black,
+                  decoration:
+                  isCompleted ? TextDecoration.lineThrough : null,
                 ),
               ),
 
-              subtitle: isAction ? _buildTaskInfo() : null,
+              // subtitle: isAction ? _buildTaskInfo() : null,
 
               trailing: isSelected
                   ? const Icon(Icons.check, color: cWhiteColor)
-                  : (isAction
+                  : isAction
                   ? Transform.scale(
                 scale: 1.4,
                 child: Checkbox(
@@ -105,15 +92,12 @@ class TaskTile extends StatelessWidget {
                   ),
                   side: const BorderSide(color: cBlackColor),
                   onChanged: (_) {
-                    final newValue = isCompleted ? 0 : 1;
-                    onToggleFinal(task, newValue);
+                    onToggleFinal(task, isCompleted ? 0 : 1);
                   },
                 ),
               )
-                  : null),
+                  : null,
             ),
-
-            const Divider(),
           ],
         ),
       ),
@@ -153,10 +137,7 @@ class TaskTile extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: Colors.grey),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: tSmall.copyWith(fontSize: 11),
-        ),
+        Text(text, style: tSmall.copyWith(fontSize: 11)),
       ],
     );
   }

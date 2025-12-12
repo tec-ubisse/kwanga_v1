@@ -1,27 +1,29 @@
+// lib/screens/projects_screens/widgets/project_actions_list.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-
+import 'package:intl/intl.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-
+import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/providers/project_actions_provider.dart';
 import 'package:kwanga/providers/projects_provider.dart';
 import 'package:kwanga/providers/auth_provider.dart';
-
 import 'package:kwanga/screens/projects_screens/dialogs/select_list_dialog.dart';
 import 'package:kwanga/screens/projects_screens/dialogs/select_project_dialog.dart';
-
-import '../../../models/project_action_model.dart';
 import '../../../providers/task_list_provider.dart';
-import '../../../utils/list_type_utils.dart';
 import '../../../widgets/dialogs/kwanga_dialog.dart';
 import '../../../widgets/dialogs/kwanga_delete_dialog.dart';
 
 class ProjectActionsList extends ConsumerWidget {
-  final List actions;
+  final List<TaskModel> actions;
+  final String projectId;
 
-  const ProjectActionsList({super.key, required this.actions});
+  const ProjectActionsList({
+    super.key,
+    required this.actions,
+    required this.projectId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,85 +32,93 @@ class ProjectActionsList extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: false,
       itemCount: actions.length,
-
       onReorder: (oldIndex, newIndex) {
         ref.read(projectActionsProvider.notifier).reorderActions(oldIndex, newIndex);
       },
-
       itemBuilder: (context, idx) {
-        final a = actions[idx];
+        final task = actions[idx];
+        final createdDate = DateFormat('dd/MM/yyyy').format(task.createdAt);
 
         return Slidable(
-          key: ValueKey(a.id),
-
+          key: ValueKey(task.id),
           endActionPane: ActionPane(
             motion: const DrawerMotion(),
             extentRatio: 0.8,
             children: [
-
               SlidableAction(
-                backgroundColor: Color(0xff2c82b5),
+                backgroundColor: const Color(0xff2c82b5),
                 foregroundColor: Colors.white,
                 icon: Icons.folder_copy,
                 label: 'Mover',
-                onPressed: (_) => _moveAction(context, ref, a),
+                onPressed: (_) => _moveAction(context, ref, task),
               ),
-
               SlidableAction(
-                backgroundColor: Color(0xff0261a1),
+                backgroundColor: const Color(0xff0261a1),
                 foregroundColor: Colors.white,
                 icon: Icons.send,
                 label: 'Alocar',
-                onPressed: (_) => _allocateAction(context, ref, a),
+                onPressed: (_) => _allocateAction(context, ref, task),
               ),
-
               SlidableAction(
-                backgroundColor: Color(0xff3271D1),
+                backgroundColor: const Color(0xff3271D1),
                 foregroundColor: Colors.white,
                 icon: Icons.edit,
                 label: 'Editar',
-                onPressed: (_) => _editAction(context, ref, a),
+                onPressed: (_) => _editAction(context, ref, task),
               ),
-
               SlidableAction(
                 backgroundColor: cTertiaryColor,
                 foregroundColor: Colors.white,
                 icon: Icons.delete,
                 label: 'Apagar',
-                onPressed: (_) => _deleteAction(context, ref, a),
+                onPressed: (_) => _deleteAction(context, ref, task),
               ),
             ],
           ),
-
           child: Container(
             color: idx % 2 == 0 ? Colors.white : cSecondaryColor.withAlpha(6),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ReorderableDragStartListener(
-                  index: idx,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.drag_handle_rounded, color: Colors.grey, size: 24),
-                  ),
-                ),
-
-                Expanded(
-                  child: Text(
-                    a.description,
-                    style: tNormal.copyWith(
-                      decoration: a.isDone ? TextDecoration.lineThrough : TextDecoration.none,
-                      color: a.isDone ? Colors.grey : Colors.black,
+                Row(
+                  children: [
+                    ReorderableDragStartListener(
+                      index: idx,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Icon(Icons.drag_handle_rounded, color: Colors.grey, size: 24),
+                      ),
                     ),
-                  ),
-                ),
+                    Text(
+                      task.description,
+                      style: tNormal.copyWith(
+                        decoration: task.completed == 1 ? TextDecoration.lineThrough : TextDecoration.none,
+                        color: task.completed == 1 ? Colors.grey : Colors.black,
+                      ),
+                    ),
 
-                Checkbox(
-                  value: a.isDone,
-                  onChanged: (_) {
-                    ref.read(projectActionsProvider.notifier).toggleActionDone(a.id);
-                  },
+                    const Spacer(),
+                    Checkbox(
+                      value: task.completed == 1,
+                      onChanged: (_) => ref.read(projectActionsProvider.notifier).toggleActionDone(task.id),
+                    ),
+
+                  ],
+                ),
+                Row(
+                  spacing: 4,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48.0),
+                      child: const Icon(Icons.date_range_outlined, size: 12, color: Colors.grey,),
+                    ),
+
+                    Text(
+                      createdDate,
+                      style: tSmall.copyWith(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -118,74 +128,56 @@ class ProjectActionsList extends ConsumerWidget {
     );
   }
 
-  Future<void> _editAction(
-      BuildContext context,
-      WidgetRef ref,
-      ProjectActionModel action,
-      ) async {
+  Future<void> _editAction(BuildContext context, WidgetRef ref, TaskModel task) async {
     final newText = await showKwangaActionDialog(
       context,
       title: "Editar ação",
       hint: "Descreva a ação",
-      initialValue: action.description,
+      initialValue: task.description,
     );
-
     if (newText == null || newText.trim().isEmpty) return;
-
-    await ref.read(projectActionsProvider.notifier).editAction(
-      action.copyWith(description: newText.trim()),
-    );
+    await ref.read(projectActionsProvider.notifier).editAction(task.copyWith(description: newText.trim()));
   }
 
-  Future<void> _deleteAction(
-      BuildContext context,
-      WidgetRef ref,
-      ProjectActionModel action,
-      ) async {
+  Future<void> _deleteAction(BuildContext context, WidgetRef ref, TaskModel task) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => KwangaDeleteDialog(
-        title: "Eliminar Tarefa",
-        message: "Tem a certeza que pretende eliminar \"${action.description}\"? Esta ação é irreversível.",
+        title: "Eliminar ação",
+        message: 'Tem a certeza que pretende eliminar "${task.description}"?',
       ),
     );
 
     if (confirm == true) {
-      await ref.read(projectActionsProvider.notifier).removeAction(action.id);
+      await ref.read(projectActionsProvider.notifier).removeAction(task.id);
     }
   }
 
-  Future<void> _moveAction(
-      BuildContext context,
-      WidgetRef ref,
-      ProjectActionModel action,
-      ) async {
+  Future<void> _moveAction(BuildContext context, WidgetRef ref, TaskModel task) async {
     final projects = ref.read(projectsProvider).value ?? [];
 
-    final projectId = await showDialog<String>(
+    final newProjectId = await showDialog<String>(
       context: context,
       builder: (_) => SelectProjectDialog(
         projects: projects,
-        currentProjectId: action.projectId,
+        currentProjectId: task.projectId,
       ),
     );
 
-    if (projectId == null) return;
+    if (newProjectId == null) return;
 
-    await ref.read(projectActionsProvider.notifier).moveActionToProject(action.id, projectId);
+    // Use provider convenience method
+    await ref.read(projectActionsProvider.notifier).moveActionToProject(task.id, newProjectId);
   }
 
-  Future<void> _allocateAction(
-      BuildContext context,
-      WidgetRef ref,
-      ProjectActionModel action,
-      ) async {
+  Future<void> _allocateAction(BuildContext context, WidgetRef ref, TaskModel task) async {
     final asyncLists = ref.watch(taskListsProvider);
 
-    // 1️⃣ Se ainda está carregando, NÃO abre caixa vazia
+    // --- SOLUÇÃO 1: Esperar o carregamento real ---
     if (asyncLists.isLoading) {
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (_) => const Dialog(
           child: Padding(
             padding: EdgeInsets.all(20),
@@ -194,37 +186,32 @@ class ProjectActionsList extends ConsumerWidget {
         ),
       );
 
-      // Adicionar um pequeno delay para permitir que o diálogo apareça
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Aguarda o provider terminar realmente
+      await ref.read(taskListsProvider.future);
 
-      Navigator.pop(context); // fecha o loading
-      return;
+      Navigator.pop(context);
     }
 
-    // 2️⃣ Se deu erro
-    if (asyncLists.hasError) {
+    // Atualiza estado após o carregamento
+    final loadedLists = ref.read(taskListsProvider);
+
+    if (loadedLists.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erro ao carregar listas.")),
+          const SnackBar(content: Text("Erro ao carregar listas."))
       );
       return;
     }
 
-    // 3️⃣ Temos as listas
-    final allLists = asyncLists.value ?? [];
-
-    // 4️⃣ Filtrar apenas listas ACTION
-    final actionLists = allLists
-        .where((l) => normalizeListType(l.listType) == "action")
-        .toList();
+    final allLists = loadedLists.value ?? [];
+    final actionLists = allLists.where((l) => l.listType == "action").toList();
 
     if (actionLists.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nenhuma lista de ações disponível.")),
+          const SnackBar(content: Text("Nenhuma lista de ações disponível."))
       );
       return;
     }
 
-    // 5️⃣ Abrir diálogo
     final listId = await showDialog<String>(
       context: context,
       builder: (_) => SelectListDialog(lists: actionLists),
@@ -232,23 +219,13 @@ class ProjectActionsList extends ConsumerWidget {
 
     if (listId == null) return;
 
-    // 6️⃣ Obter userId
     final user = ref.read(authProvider).value;
-    if (user == null || user.id == null) {
-      debugPrint("ERRO: userId não encontrado!");
-      return;
-    }
+    if (user == null || user.id == null) return;
 
-    // 7️⃣ Alocar ação
-    await ref.read(projectActionsProvider.notifier).allocateActionToList(
-      action,
-      listId,
-      user.id!,
-    );
+    await ref.read(projectActionsProvider.notifier).allocateActionToList(task, listId, user.id!);
 
-    // Opcional: feedback
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Ação alocada com sucesso!")),
+        const SnackBar(content: Text("Ação alocada com sucesso!"))
     );
   }
 

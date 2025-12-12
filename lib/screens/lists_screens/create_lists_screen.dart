@@ -5,7 +5,6 @@ import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/providers/lists_provider.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
-import 'package:kwanga/utils/list_type_utils.dart';
 
 class CreateOrEditListScreen extends ConsumerStatefulWidget {
   final ListModel? existingList;
@@ -38,7 +37,7 @@ class _CreateOrEditListScreenState
     super.initState();
     if (isEditing) {
       _selectedListType =
-          normalizeListType(widget.existingList!.listType);
+          (widget.existingList!.listType);
       _descriptionController.text = widget.existingList!.description;
     }
   }
@@ -66,7 +65,7 @@ class _CreateOrEditListScreenState
 
       if (isEditing) {
         final updatedList = widget.existingList!.copyWith(
-          listType: normalizeListType(_selectedListType!),
+          listType: (_selectedListType!),
           description: _descriptionController.text.trim(),
         );
         await notifier.updateList(updatedList);
@@ -77,7 +76,7 @@ class _CreateOrEditListScreenState
         );
       } else {
         await notifier.addList(
-          listType: normalizeListType(_selectedListType!),
+          listType: _selectedListType!,
           description: _descriptionController.text.trim(),
         );
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,97 +107,99 @@ class _CreateOrEditListScreenState
         foregroundColor: cWhiteColor,
         title: Text(isEditing ? 'Editar Lista' : 'Adicionar Lista'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: defaultPadding,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tipo de Lista', style: tNormal),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(
-                          color: _listTypeError != null
-                              ? Theme.of(context).colorScheme.error
-                              : cBlackColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: defaultPadding,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tipo de Lista', style: tNormal),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12.0),
+                          border: Border.all(
+                            color: _listTypeError != null
+                                ? Theme.of(context).colorScheme.error
+                                : cBlackColor,
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _selectedListType,
-                          hint:
-                          const Text('Selecione um tipo de lista'),
-                          items: _listTypes.map((item) {
-                            return DropdownMenuItem<String>(
-                              value: item["value"],
-                              child:
-                              Text(item["label"]!, style: tNormal),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedListType = value;
-                              _listTypeError = null;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                    if (_listTypeError != null)
-                      Padding(
-                        padding:
-                        const EdgeInsets.only(top: 8.0, left: 12.0),
-                        child: Text(
-                          _listTypeError!,
-                          style: TextStyle(
-                            color:
-                            Theme.of(context).colorScheme.error,
-                            fontSize: 12.0,
+                        child: Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedListType,
+                            hint:
+                            const Text('Selecione um tipo de lista'),
+                            items: _listTypes.map((item) {
+                              return DropdownMenuItem<String>(
+                                value: item["value"],
+                                child:
+                                Text(item["label"]!, style: tNormal),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedListType = value;
+                                _listTypeError = null;
+                              });
+                            },
                           ),
                         ),
                       ),
-                    const SizedBox(height: 16.0),
-                    Text('Designação', style: tNormal),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: inputDecoration,
-                      maxLines: 2,
-                      maxLength: 30,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Deve conter a descrição da lista';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+                      if (_listTypeError != null)
+                        Padding(
+                          padding:
+                          const EdgeInsets.only(top: 8.0, left: 12.0),
+                          child: Text(
+                            _listTypeError!,
+                            style: TextStyle(
+                              color:
+                              Theme.of(context).colorScheme.error,
+                              fontSize: 12.0,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16.0),
+                      Text('Designação', style: tNormal),
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: inputDecoration,
+                        maxLines: 2,
+                        maxLength: 30,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Deve conter a descrição da lista';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 12.0,
-              horizontal: 24.0,
-            ),
-            child: _isLoading
-                ? const CircularProgressIndicator()
-                : GestureDetector(
-              onTap: _saveOrUpdateList,
-              child: MainButton(
-                buttonText: isEditing ? 'Actualizar' : 'Salvar',
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 12.0,
+                horizontal: 24.0,
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : GestureDetector(
+                onTap: _saveOrUpdateList,
+                child: MainButton(
+                  buttonText: isEditing ? 'Actualizar' : 'Salvar',
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
