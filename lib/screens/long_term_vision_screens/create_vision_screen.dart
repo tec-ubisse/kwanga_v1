@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/widgets/kwanga_dropdown_button.dart';
+
 import '../../models/vision_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/visions_provider.dart';
 import '../../providers/life_area_provider.dart';
+import '../../widgets/buttons/bottom_action_bar.dart';
+import '../../widgets/feedback_widget.dart';
 
 class CreateVision extends ConsumerStatefulWidget {
-  final String? lifeAreaId;          // 🔥 Agora opcional
+  final String? lifeAreaId;
   final VisionModel? visionToEdit;
 
   const CreateVision({super.key, this.lifeAreaId, this.visionToEdit});
@@ -22,17 +26,21 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
 
-  late int selectedYear;
   String? selectedLifeAreaId;
+  String? lifeAreaError;
+  late int selectedYear;
+
+  bool get isEditing => widget.visionToEdit != null;
 
   @override
   void initState() {
     super.initState();
 
-    if (widget.visionToEdit != null) {
-      _descriptionController.text = widget.visionToEdit!.description;
-      selectedYear = widget.visionToEdit!.conclusion;
-      selectedLifeAreaId = widget.visionToEdit!.lifeAreaId;
+    if (isEditing) {
+      final v = widget.visionToEdit!;
+      _descriptionController.text = v.description;
+      selectedYear = v.conclusion;
+      selectedLifeAreaId = v.lifeAreaId;
     } else {
       selectedYear = DateTime.now().year + 3;
       selectedLifeAreaId = widget.lifeAreaId;
@@ -40,10 +48,47 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
   }
 
   @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+
+    if (selectedLifeAreaId == null) {
+      setState(() => lifeAreaError = 'Seleccione a área da vida');
+    }
+
+    if (!isValid || selectedLifeAreaId == null) return;
+
+    final user = ref.read(authProvider).value;
+    if (user?.id == null) return;
+
+    if (isEditing) {
+      final updated = widget.visionToEdit!.copyWith(
+        description: _descriptionController.text.trim(),
+        conclusion: selectedYear,
+      );
+      await ref.read(visionsProvider.notifier).editVision(updated);
+      showFeedbackScaffoldMessenger(context, "Visão actualizada com sucesso");
+    } else {
+      await ref.read(visionsProvider.notifier).addVision(
+        userId: user!.id!,
+        lifeAreaId: selectedLifeAreaId!,
+        description: _descriptionController.text.trim(),
+        conclusion: selectedYear,
+      );
+      showFeedbackScaffoldMessenger(context, "Visão adicionada com sucesso");
+    }
+
+    ref.invalidate(visionsProvider);
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final lifeAreasAsync = ref.watch(lifeAreasProvider);
-    final authState = ref.watch(authProvider);
-    final user = authState.value;
 
     final years = [
       DateTime.now().year + 3,
@@ -55,27 +100,27 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, st) => Scaffold(body: Center(child: Text("Erro: $e"))),
-
+      error: (e, _) => Scaffold(body: Center(child: Text("Erro: $e"))),
       data: (lifeAreas) {
-        if (selectedLifeAreaId == null && widget.visionToEdit == null) {
+        final hasLifeAreas = lifeAreas.isNotEmpty;
+
+        if (selectedLifeAreaId == null && !isEditing && hasLifeAreas) {
           selectedLifeAreaId = lifeAreas.first.id;
         }
 
-        final selectedArea = lifeAreas.firstWhere(
-              (a) => a.id == selectedLifeAreaId,
-          orElse: () => lifeAreas.first,
-        );
-
         return Scaffold(
           appBar: AppBar(
-            title: Text(
-              widget.visionToEdit == null ? "Nova Visão" : "Editar Visão",
-            ),
+            title: Text(isEditing ? "Editar Visão" : "Nova Visão"),
             backgroundColor: cMainColor,
             foregroundColor: cWhiteColor,
           ),
           backgroundColor: Colors.white,
+
+          bottomNavigationBar: BottomActionBar(
+            buttonText: isEditing ? "Actualizar" : "Salvar",
+            onPressed: _save,
+          ),
+
           body: SafeArea(
             child: Form(
               key: _formKey,
@@ -84,67 +129,59 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.lifeAreaId == null && widget.visionToEdit == null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Seleccione a área da vida",
-                              style: tSmallTitle.copyWith(fontSize: 16)),
+                    // -------- ÁREA DA VIDA --------
+                    if (widget.lifeAreaId == null && !isEditing) ...[
+                      Text("Seleccione a área da vida",
+                          style: tSmallTitle.copyWith(fontSize: 16)),
+                      const SizedBox(height: 12),
 
-                          const SizedBox(height: 12),
-
-                          KwangaDropdownButton<String>(
-                            value: selectedLifeAreaId!,
-                            items: lifeAreas
-                                .map((a) => DropdownMenuItem(
-                              value: a.id,
-                              child: Text(a.designation),
-                            ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() => selectedLifeAreaId = value);
-                            },
-                          ),
-
-                          const SizedBox(height: 32),
-                        ],
+                      KwangaDropdownButton<String>(
+                        value: selectedLifeAreaId,
+                        errorMessage: lifeAreaError,
+                        disabledMessage: hasLifeAreas
+                            ? null
+                            : 'Deve criar uma área da vida primeiro',
+                        items: lifeAreas
+                            .map((a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text(a.designation),
+                        ))
+                            .toList(),
+                        onChanged: (v) => setState(() {
+                          selectedLifeAreaId = v;
+                          lifeAreaError = null;
+                        }),
+                        labelText: '',
+                        hintText: 'Seleccione a área da vida',
                       ),
 
-                    Text(
-                      "Descrição da visão",
-                      style: tSmallTitle.copyWith(fontSize: 16),
-                    ),
+                      const SizedBox(height: 32),
+                    ],
+
+                    // -------- DESCRIÇÃO --------
+                    Text("Descrição da visão",
+                        style: tSmallTitle.copyWith(fontSize: 16)),
                     const SizedBox(height: 12),
 
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black26),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 6,
+                      decoration: inputDecoration.copyWith(
+                        hintText: "Escreva a sua visão de longo prazo",
                       ),
-                      height: 140,
-                      child: TextFormField(
-                        controller: _descriptionController,
-                        maxLines: 6,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return "Por favor escreva a visão.";
-                          }
-                          return null;
-                        },
-                        decoration: const InputDecoration(
-                          hintText: "Escreva a sua visão de longo prazo",
-                          border: InputBorder.none,
-                        ),
-                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return "A descrição da visão é obrigatória";
+                        }
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 32),
 
-                    Text(
-                      "Ano de Conclusão",
-                      style: tSmallTitle.copyWith(fontSize: 16),
-                    ),
+                    // -------- ANO --------
+                    Text("Ano de Conclusão",
+                        style: tSmallTitle.copyWith(fontSize: 16)),
                     const SizedBox(height: 16),
 
                     Row(
@@ -160,16 +197,20 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
                                   vertical: 14, horizontal: 22),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: isSelected ? cSecondaryColor : Colors.white,
+                                color:
+                                isSelected ? cSecondaryColor : Colors.white,
                                 border: Border.all(
-                                  color:
-                                  isSelected ? cSecondaryColor : Colors.black26,
+                                  color: isSelected
+                                      ? cSecondaryColor
+                                      : Colors.black26,
                                 ),
                               ),
                               child: Text(
                                 year.toString(),
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black87,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
                                   fontWeight: isSelected
                                       ? FontWeight.bold
                                       : FontWeight.normal,
@@ -187,79 +228,8 @@ class _CreateVisionState extends ConsumerState<CreateVision> {
               ),
             ),
           ),
-
-          bottomNavigationBar: Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFFEFEFEF),
-            child: SizedBox(
-              height: 56,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cMainColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () async {
-                  if (user == null || user.id == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Erro: nenhum utilizador autenticado.")),
-                    );
-                    return;
-                  }
-
-                  if (selectedLifeAreaId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Seleccione uma área da vida.")),
-                    );
-                    return;
-                  }
-
-                  if (_formKey.currentState!.validate()) {
-                    if (widget.visionToEdit == null) {
-                      // NOVA VISÃO
-                      await ref.read(visionsProvider.notifier).addVision(
-                        userId: user.id!,
-                        lifeAreaId: selectedLifeAreaId!,
-                        description: _descriptionController.text.trim(),
-                        conclusion: selectedYear,
-                      );
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Visão adicionada com sucesso!")),
-                      );
-                    } else {
-                      // EDITAR VISÃO
-                      final updated = widget.visionToEdit!.copyWith(
-                        description: _descriptionController.text.trim(),
-                        conclusion: selectedYear,
-                      );
-
-                      await ref.read(visionsProvider.notifier).editVision(updated);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Visão actualizada com sucesso!")),
-                      );
-                    }
-
-                    ref.invalidate(visionsProvider);
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text(
-                  "Salvar",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
-            ),
-          ),
         );
       },
     );
   }
 }
-

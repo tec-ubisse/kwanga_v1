@@ -7,8 +7,7 @@ import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
 
 import 'package:kwanga/providers/auth_provider.dart';
-import 'package:kwanga/providers/lists_provider.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
 
 import 'package:kwanga/screens/task_screens/widgets/date_option_selector.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_switch_row.dart';

@@ -8,8 +8,10 @@ import 'package:kwanga/providers/lists_provider.dart';
 import 'package:kwanga/screens/lists_screens/widgets/list_tile_item.dart';
 import 'package:kwanga/screens/lists_screens/widgets/lists_filter_bar.dart';
 import 'package:kwanga/screens/task_screens/create_task_screen.dart';
-import 'package:kwanga/widgets/buttons/main_button.dart';
-import 'package:kwanga/widgets/custom_drawer.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
+import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
+
+import '../task_screens/new_task.dart';
 
 class ListsScreen extends ConsumerWidget {
   final String listType;
@@ -22,165 +24,146 @@ class ListsScreen extends ConsumerWidget {
     final selectedFilter = ref.watch(listFilterProvider);
     final selectedIds = ref.watch(selectedListsProvider);
 
-    final normalizedIncomingType = listType;
-    final String toDo = normalizedIncomingType == 'entry' ? 'Entrada' : 'Tarefa';
+    // Texto para UI baseado no tipo
+    final String toDo = listType == 'entry' ? 'Entrada' : 'Tarefa';
+    final String appBarTitle =
+    listType == 'action' ? 'Próximas Acções' : 'Entradas';
 
     return Scaffold(
       appBar: AppBar(
         foregroundColor: cWhiteColor,
         backgroundColor: cMainColor,
-        title: Text(
-          normalizedIncomingType == 'action'
-              ? 'Próximas Acções'
-              : 'Entradas',
-        ),
+        title: Text(appBarTitle),
       ),
       backgroundColor: cWhiteColor,
       drawer: const CustomDrawer(),
-      body: SafeArea(
-        child: Padding(
-          padding: defaultPadding,
-          child: Column(
-            children: [
-              // ---------------------------------------------------------
-              // FILTRO (somente quando listType não foi definido na rota)
-              // ---------------------------------------------------------
-              if (listType.isEmpty)
-                ListsFilterBar(
-                  selectedFilter: selectedFilter,
-                  onFilterSelected: (index) =>
-                      ref.read(listFilterProvider.notifier).setFilter(index),
-                ),
-
-              Expanded(
-                child: listsAsync.when(
-                  loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-                  error: (err, stack) =>
-                      Center(child: Text('Erro: $err')),
-
-                  // ---------------------------------------------------------
-                  // LISTAS CARREGADAS
-                  // ---------------------------------------------------------
-                  data: (lists) {
-                    List<ListModel> filteredLists;
-
-                    // -- CASO 1: tela inicial de listas (tem barra de filtros)
-                    if (listType.isEmpty) {
-                      if (selectedFilter == 1) {
-                        filteredLists = lists
-                            .where((l) =>
-                        l.listType == 'action')
-                            .toList();
-                      } else if (selectedFilter == 2) {
-                        filteredLists = lists
-                            .where((l) =>
-                        l.listType == 'entry')
-                            .toList();
-                      } else {
-                        // ordenar: actions primeiro, depois entries
-                        filteredLists = [...lists]
-                          ..sort((a, b) {
-                            final aNorm = a.listType;
-                            final bNorm = b.listType;
-                            if (aNorm == bNorm) return 0;
-                            return aNorm == 'action' ? -1 : 1;
-                          });
-                      }
-                    }
-
-                    // -- CASO 2: rota veio com um tipo definido (action / entry)
-                    else {
-                      filteredLists = lists
-                          .where((l) =>
-                      l.listType ==
-                          normalizedIncomingType)
-                          .toList();
-                    }
-
-                    if (filteredLists.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'Nenhuma lista encontrada.',
-                          style: tNormal.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      itemCount: filteredLists.length,
-                      itemBuilder: (context, index) {
-                        final list = filteredLists[index];
-                        final isSelected = selectedIds.contains(list.id);
-
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(12.0),
-                              bottomRight: Radius.circular(12.0),
-                            ),
-                            child: Container(
-                              color: isSelected
-                                  ? cTertiaryColor.withAlpha(30)
-                                  : null,
-
-                              // 🔥 Passamos SEMPRE o modelo ORIGINAL
-                              child: ListTileItem(
-                                onTap: () {},
-                                onLongPress: () {},
-                                isSelected: isSelected,
-                                isEditable: true,
-                                canViewChildren: true,
-                                listModel: list,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+      body: Padding(
+        padding: defaultPadding,
+        child: Column(
+          children: [
+            // Filtro (somente quando listType está vazio)
+            if (listType.isEmpty)
+              ListsFilterBar(
+                selectedFilter: selectedFilter,
+                onFilterSelected: (index) =>
+                    ref.read(listFilterProvider.notifier).setFilter(index),
               ),
 
-              // ---------------------------------------------------------
-              // BOTÃO "ADICIONAR TAREFA / ENTRADA"
-              // ---------------------------------------------------------
-              if (normalizedIncomingType.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    final lists = listsAsync.value ?? [];
+            Expanded(
+              child: listsAsync.when(
+                loading: () =>
+                const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Erro: $err')),
+                data: (lists) {
+                  List<ListModel> filteredLists;
 
-                    final filtered = lists
-                        .where((l) =>
-                    l.listType ==
-                        normalizedIncomingType)
-                        .toList();
-
-                    if (filtered.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Nenhuma lista disponível para adicionar ${toDo}s.'),
-                        ),
-                      );
-                      return;
+                  // CASO 1: tela inicial de listas (tem barra de filtros)
+                  if (listType.isEmpty) {
+                    if (selectedFilter == 1) {
+                      filteredLists = lists
+                          .where((l) => l.listType == 'action')
+                          .toList();
+                    } else if (selectedFilter == 2) {
+                      filteredLists = lists
+                          .where((l) => l.listType == 'entry')
+                          .toList();
+                    } else {
+                      // ordenar: actions primeiro, depois entries
+                      filteredLists = [...lists]
+                        ..sort((a, b) {
+                          if (a.listType == b.listType) return 0;
+                          return a.listType == 'action' ? -1 : 1;
+                        });
                     }
+                  }
+                  // CASO 2: rota veio com um tipo definido (action / entry)
+                  else {
+                    filteredLists =
+                        lists.where((l) => l.listType == listType).toList();
+                  }
 
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) =>
-                            CreateTaskScreen(listModel: filtered.first),
+                  if (filteredLists.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Nenhuma lista encontrada.',
+                        style: tNormal.copyWith(fontStyle: FontStyle.italic),
                       ),
                     );
-                  },
-                  child: MainButton(buttonText: 'Adicionar $toDo'),
-                ),
-            ],
-          ),
+                  }
+
+                  return ListView.builder(
+                    itemCount: filteredLists.length,
+                    itemBuilder: (context, index) {
+                      final list = filteredLists[index];
+                      final isSelected = selectedIds.contains(list.id);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            12.0
+                          ),
+                          child: Container(
+                            color: isSelected
+                                ? cTertiaryColor.withAlpha(30)
+                                : null,
+                            child: ListTileItem(
+                              onTap: () {},
+                              onLongPress: () {},
+                              isSelected: isSelected,
+                              isEditable: true,
+                              canViewChildren: true,
+                              listModel: list,
+                              showProgress: true, // ✅ Mostra o círculo de progresso
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
+      ),
+      bottomNavigationBar: listsAsync.when(
+        loading: () =>
+            BottomActionBar(buttonText: 'Adicionar $toDo', onPressed: () {}),
+        error: (_, __) =>
+            BottomActionBar(buttonText: 'Adicionar $toDo', onPressed: () {}),
+        data: (lists) {
+          final filteredLists =
+          lists.where((l) => l.listType == listType).toList();
+
+          if (filteredLists.isEmpty) {
+            return BottomActionBar(
+              buttonText: 'Adicionar $toDo',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Crie uma lista primeiro antes de adicionar tarefas.',
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+
+          final defaultList = filteredLists.first;
+
+          return BottomActionBar(
+            buttonText: 'Adicionar $toDo',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => NewTaskScreen(listModel: defaultList),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

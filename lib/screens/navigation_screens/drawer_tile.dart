@@ -12,8 +12,8 @@ class DrawerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).pop();
-        Navigator.of(context).pushReplacement(
+        // Navigator.of(context).pop();
+        Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) =>
                 navigateTo,

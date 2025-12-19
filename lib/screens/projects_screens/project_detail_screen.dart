@@ -1,5 +1,3 @@
-// lib/screens/projects_screens/project_detail_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/models/project_model.dart';
@@ -9,6 +7,7 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/utils/date_utils.dart';
+import '../../widgets/feedback_widget.dart';
 import 'widgets/project_header.dart';
 import 'widgets/project_info_bar.dart';
 import 'widgets/project_actions_list.dart';
@@ -71,6 +70,7 @@ class _ProjectDetailScreenState
             context,
             title: "Adicionar tarefa",
             hint: "Escreva a sua tarefa aqui",
+            icon: Icons.edit,
           );
 
           if (newDesc != null && newDesc.trim().isNotEmpty) {
@@ -82,6 +82,8 @@ class _ProjectDetailScreenState
               userId: user.id!,
               description: newDesc.trim(),
             );
+
+            showFeedbackScaffoldMessenger(context, "Tarefa adicionada com sucesso");
           }
         },
       ),

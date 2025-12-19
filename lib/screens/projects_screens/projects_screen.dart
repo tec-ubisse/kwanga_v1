@@ -9,7 +9,7 @@ import 'package:kwanga/models/project_model.dart';
 import 'package:kwanga/models/task_model.dart';
 
 import 'package:kwanga/providers/projects_provider.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
 import 'package:kwanga/providers/monthly_goals_provider.dart';
 import 'package:kwanga/providers/annual_goals_provider.dart';
 import 'package:kwanga/providers/visions_provider.dart';
@@ -17,7 +17,7 @@ import 'package:kwanga/providers/life_area_provider.dart';
 import 'package:kwanga/providers/auth_provider.dart';
 
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
-import '../../widgets/custom_drawer.dart';
+import '../navigation_screens/custom_drawer.dart';
 import '../../widgets/dialogs/kwanga_delete_dialog.dart';
 
 import '../monthly_goals_screens/widgets/monthly_goal_year_dropdown.dart';

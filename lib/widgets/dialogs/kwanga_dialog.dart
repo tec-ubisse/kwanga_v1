@@ -4,51 +4,33 @@ Future<String?> showKwangaActionDialog(
     BuildContext context, {
       required String title,
       required String hint,
+      required IconData icon,
       String initialValue = '',
     }) {
   return showDialog<String>(
     context: context,
-    // Garante que o usuário tem que interagir com os botões
     barrierDismissible: false,
     builder: (BuildContext dialogContext) {
-      // Use um StatefulWidget ou, como aqui, um widget simples que gere o controlador.
-      // O StatefulBuilder é ideal para diálogos se precisarmos de setState,
-      // mas neste caso, o controlador pode ser gerido dentro de um State/Hook.
-      // Vamos usar o StatefulBuilder para demonstrar a gestão correta do controlador.
-      return StatefulBuilder(
-        builder: (context, setState) {
-          final controller = TextEditingController(text: initialValue);
-
-          // O Dialog é envolvido em um StatefulBuilder/StatefulWidget
-          // para garantir que o TextEditingController seja descartado (disposed).
-          // **ATENÇÃO:** O controlador DEVE ser descartado. No seu código original,
-          // ele era criado fora do `builder` do `showDialog` mas não era descartado.
-          // Aqui, vamos refatorar para um widget dedicado ou usar um gancho para garantir o dispose.
-          // Para a correção rápida e segura, vamos usar um widget que faça o dispose.
-          // Como não podemos fazer o dispose dentro do `StatefulBuilder` sem um `initState`/`dispose`,
-          // a solução mais robusta é criar um widget que encapsule o diálogo e o controlador.
-
-          // **Correção principal: Uso de um Widget dedicado para gestão do controlador**
-          return _KwangaActionDialogContent(
-            title: title,
-            hint: hint,
-            initialValue: initialValue,
-          );
-        },
+      return _KwangaActionDialogContent(
+        title: title,
+        hint: hint,
+        icon: icon,
+        initialValue: initialValue,
       );
     },
   );
 }
 
-// Widget auxiliar para gerir o estado do controlador corretamente (dispose)
 class _KwangaActionDialogContent extends StatefulWidget {
   final String title;
   final String hint;
+  final IconData icon;
   final String initialValue;
 
   const _KwangaActionDialogContent({
     required this.title,
     required this.hint,
+    required this.icon,
     required this.initialValue,
   });
 
@@ -57,7 +39,8 @@ class _KwangaActionDialogContent extends StatefulWidget {
       _KwangaActionDialogContentState();
 }
 
-class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> {
+class _KwangaActionDialogContentState
+    extends State<_KwangaActionDialogContent> {
   late final TextEditingController _controller;
 
   @override
@@ -68,7 +51,6 @@ class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> 
 
   @override
   void dispose() {
-    // **CORREÇÃO CRÍTICA**: Dispor o controlador para evitar fugas de memória.
     _controller.dispose();
     super.dispose();
   }
@@ -103,7 +85,10 @@ class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> 
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.folder, color: Colors.white),
+                  Icon(
+                    widget.icon,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -127,6 +112,7 @@ class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> 
               child: TextField(
                 controller: _controller,
                 maxLines: 5,
+                autofocus: true,
                 decoration: InputDecoration(
                   hintText: widget.hint,
                   hintStyle: const TextStyle(color: Colors.grey),
@@ -179,8 +165,12 @@ class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> 
                   // SALVAR
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _controller.text.trim()),
+                      onPressed: () {
+                        final text = _controller.text.trim();
+                        if (text.isNotEmpty) {
+                          Navigator.pop(context, text);
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF235E8B),
                         foregroundColor: Colors.white,
@@ -190,9 +180,9 @@ class _KwangaActionDialogContentState extends State<_KwangaActionDialogContent> 
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        "Salvar",
-                        style: TextStyle(
+                      child: Text(
+                        widget.initialValue.isEmpty ? "Salvar" : "Actualizar",
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                         ),
                       ),

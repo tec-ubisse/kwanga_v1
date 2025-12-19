@@ -40,7 +40,7 @@ class YearSelector extends StatelessWidget {
           ),
         ),
       )
-          .toList(),
+          .toList(), labelText: 'Selecione o ano', hintText: 'Escolha um ano',
     );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/screens/configurations_screen/version_tile.dart';
-import 'package:kwanga/widgets/custom_drawer.dart';
+import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 
 class VersionScreen extends StatelessWidget {
   final String currentVersion;

@@ -8,7 +8,7 @@ import 'package:kwanga/providers/annual_goals_provider.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
 import 'package:kwanga/providers/visions_provider.dart';
 
-import 'package:kwanga/widgets/custom_drawer.dart';
+import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 
 import 'widgets/goal_area_section.dart';

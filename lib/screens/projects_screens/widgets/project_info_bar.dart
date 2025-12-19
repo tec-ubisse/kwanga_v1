@@ -50,7 +50,7 @@ class _ProjectInfoBarState extends State<ProjectInfoBar> {
           ),
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

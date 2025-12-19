@@ -26,7 +26,7 @@ class TaskSwitchRow extends StatelessWidget {
       value: enabled,
       onChanged: onChanged,
       trailing: Builder(
-        builder: (context) => InkWell(
+        builder: (context) => GestureDetector(
           onTap: enabled
               ? () async {
             final picked = await showTimePicker(
@@ -61,7 +61,7 @@ class TaskSwitchRow extends StatelessWidget {
       value: enabled,
       onChanged: onChanged,
       trailing: Builder(
-        builder: (context) => InkWell(
+        builder: (context) => GestureDetector(
           onTap: enabled
               ? () async {
             final options = ['Todos os dias', 'Dias úteis', 'Fins de semana'];

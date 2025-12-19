@@ -8,8 +8,9 @@ const cTertiaryColor = Color(0xffFF8B7B);
 const cWhiteColor = Colors.white;
 // const cWhiteColor = Color(0xffF8F6F3);
 const cBlackColor = Color(0xff475569);
+const cCardBackgroundColor = Color(0xffF8F6F3);
 
-const defaultPadding = EdgeInsets.all(24.0);
+const defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 0);
 
 const cDefaultShadow = BoxShadow(
   color: Color(0x1A000000), // Colors starts with 0x1a to apply opacity of 10%

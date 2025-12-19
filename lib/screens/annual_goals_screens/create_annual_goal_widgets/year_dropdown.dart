@@ -1,58 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/vision_model.dart';
-import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import '../../../widgets/kwanga_dropdown_button.dart';
 
 class YearDropdown extends StatelessWidget {
   final VisionModel? lockedVision;
   final int? selectedYear;
 
-  /// 👇 Agora é opcional (NULLABLE)
+  /// null → dropdown desabilitado
   final ValueChanged<int?>? onChanged;
+
+  /// erro vindo do FormField
+  final String? errorMessage;
 
   const YearDropdown({
     super.key,
     required this.lockedVision,
     required this.selectedYear,
-    this.onChanged, // 👈 Não é mais required
+    this.onChanged,
+    this.errorMessage,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 🔒 Sem visão → desabilitado
     if (lockedVision == null) {
-      return DropdownButtonFormField<int>(
-        decoration: _input(),
+      return KwangaDropdownButton<int>(
+        value: null,
         items: const [],
-        hint: const Text("Deve definir uma visão primeiro"),
-        onChanged: null, // 👈 Desabilita corretamente
+        onChanged: null,
+        labelText: 'Ano',
+        hintText: 'Selecione o ano',
+        disabledMessage: 'Defina uma visão primeiro',
+        errorMessage: errorMessage,
       );
     }
 
-    final current = DateTime.now().year;
+    final currentYear = DateTime.now().year;
     final maxYear = lockedVision!.conclusion;
-    final count = (maxYear - current + 1).clamp(0, 20);
+    final count = (maxYear - currentYear + 1).clamp(0, 20);
 
-    final List<int> years = count <= 0
+    final years = count <= 0
         ? [maxYear]
-        : List.generate(count, (i) => current + i);
+        : List.generate(count, (i) => currentYear + i);
 
-    return DropdownButtonFormField<int>(
+    return KwangaDropdownButton<int>(
       value: selectedYear,
-      decoration: _input(),
-      items: years
-          .map((y) => DropdownMenuItem(value: y, child: Text("$y")))
-          .toList(),
-      hint: const Text("Selecione o ano"),
-
-      /// 👇 Agora aceita null — dropdown fica desabilitado se onChanged == null
+      labelText: '',
+      hintText: 'Selecione o ano',
+      errorMessage: errorMessage,
       onChanged: onChanged,
-
-      validator: (v) => v == null ? "Selecione o ano" : null,
+      items: years
+          .map(
+            (y) => DropdownMenuItem<int>(
+          value: y,
+          child: Text('$y', style: tNormal),
+        ),
+      )
+          .toList(),
     );
   }
-
-  InputDecoration _input() => InputDecoration(
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-    filled: true,
-    fillColor: cBlackColor.withAlpha(10),
-  );
 }

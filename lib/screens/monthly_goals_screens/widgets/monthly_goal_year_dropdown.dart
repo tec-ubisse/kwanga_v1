@@ -29,7 +29,7 @@ class MonthlyGoalYearDropdown extends StatelessWidget {
               child: Text("$y", style: tNormal),
             );
           }).toList(),
-          onChanged: (v) => onChanged(v!),
+          onChanged: (v) => onChanged(v!), labelText: '', hintText: '',
         ),
       ),
     );

@@ -4,10 +4,14 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
 import 'package:kwanga/screens/task_screens/create_task_screen.dart';
-import 'package:kwanga/screens/task_screens/widgets/task_tile.dart';
+import 'package:kwanga/screens/task_screens/widgets/task_list_view.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
+import 'package:kwanga/widgets/dialogs/kwanga_delete_dialog.dart';
+
+import '../../providers/lists_provider.dart';
+import '../projects_screens/dialogs/select_list_dialog.dart';
 
 class ListTasksScreen extends ConsumerWidget {
   final ListModel listModel;
@@ -16,41 +20,40 @@ class ListTasksScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final message = listModel.listType == 'entry'
+    final isEntryList = listModel.listType == 'entry';
+
+    final message = isEntryList
         ? 'Nenhum item de entrada nesta lista.'
         : 'Nenhuma tarefa nesta lista.';
 
+    final itemLabel = isEntryList ? 'entrada' : 'tarefa';
+
     final tasks = ref.watch(tasksByListProvider(listModel.id));
-    final listType = listModel.listType;
 
     Future<void> deleteTask(TaskModel task) async {
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            'Eliminar Tarefa',
-            style: tTitle.copyWith(color: cTertiaryColor),
-          ),
-          content: Text(
-            'Tem certeza que deseja eliminar a tarefa "${task.description}"?',
-            style: tNormal,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar'),
-            ),
-          ],
+        builder: (_) => KwangaDeleteDialog(
+          title: 'Eliminar $itemLabel',
+          message:
+          'Tem certeza que deseja eliminar a $itemLabel "${task.description}"? Esta ação é irreversível.',
         ),
       );
 
       if (confirm == true) {
         await ref.read(tasksProvider.notifier).deleteTask(task.id);
-        ref.invalidate(tasksProvider);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Eliminado com sucesso.'),
+                Image.asset('assets/gifs/delete.gif', width: 40),
+              ],
+            ),
+          ),
+        );
       }
     }
 
@@ -61,7 +64,10 @@ class ListTasksScreen extends ConsumerWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          Navigator.pop(context, {'completed': completed, 'total': total});
+          Navigator.pop(context, {
+            'completed': completed,
+            'total': total,
+          });
         }
       },
       child: Scaffold(
@@ -71,7 +77,6 @@ class ListTasksScreen extends ConsumerWidget {
           foregroundColor: cWhiteColor,
           title: Text(listModel.description),
         ),
-
         bottomNavigationBar: BottomActionBar(
           buttonText: 'Adicionar Tarefa',
           onPressed: () async {
@@ -87,69 +92,90 @@ class ListTasksScreen extends ConsumerWidget {
             }
           },
         ),
-
         body: Padding(
           padding: defaultPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (total > 0)
+              if (!isEntryList && total > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: listType == 'action'
-                      ? Text(
-                          '$completed / $total tarefas concluídas',
-                          style: tNormal.copyWith(color: Colors.grey[700]),
-                        )
-                      : null,
+                  child: Text(
+                    '$completed / $total tarefas',
+                    style: tNormal.copyWith(color: Colors.grey[700]),
+                  ),
                 ),
               Expanded(
                 child: tasks.isEmpty
                     ? Center(
-                        child: Text(
-                          message,
-                          style: tNormal.copyWith(fontStyle: FontStyle.italic),
+                  child: Text(
+                    message,
+                    style: tNormal.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+                    : TaskListView(
+                  tasks: tasks,
+                  lists: const [],
+                  selectedTaskIds: const {},
+
+                  onDelete: deleteTask,
+
+                  // 🔹 Só permite mover se for lista de entradas
+                  onMove: isEntryList
+                      ? (task) async {
+                    final actionLists = await ref
+                        .read(listsProvider.future)
+                        .then((lists) => lists
+                        .where((l) =>
+                    l.listType == 'action' &&
+                        l.isProject == false)
+                        .toList());
+
+                    final listId =
+                    await showDialog<String>(
+                      context: context,
+                      builder: (_) =>
+                          SelectListDialog(lists: actionLists),
+                    );
+
+                    if (listId == null) return;
+
+                    await ref
+                        .read(tasksProvider.notifier)
+                        .moveTaskToList(
+                      taskId: task.id,
+                      targetListId: listId,
+                    );
+                  }
+                      : null,
+
+                  onUpdate: (taskToEdit) async {
+                    final updated = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CreateTaskScreen(
+                          listModel: listModel,
+                          taskModel: taskToEdit,
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          final task = tasks[index];
-                          return TaskTile(
-                            key: ValueKey(task.id),
-                            task: task,
-                            onDelete: deleteTask,
-                            isSelected: false,
-                            onUpdate: (taskToEdit) async {
-                              final updated = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (ctx) => CreateTaskScreen(
-                                    listModel: listModel,
-                                    taskModel: taskToEdit,
-                                  ),
-                                ),
-                              );
-
-                              if (updated is TaskModel) {
-                                ref.invalidate(tasksProvider);
-                              }
-                            },
-
-                            onLongPress: () {
-                              // multiple-selection logic
-                            },
-
-                            onToggleFinal: (t, status) {
-                              ref
-                                  .read(tasksProvider.notifier)
-                                  .updateTaskStatus(t.id, status == 1);
-
-                              ref.invalidate(tasksProvider);
-                            },
-                          );
-                        },
                       ),
+                    );
+
+                    if (updated is TaskModel) {
+                      ref.invalidate(tasksProvider);
+                    }
+                  },
+
+                  onToggleComplete: (t, status) {
+                    ref
+                        .read(tasksProvider.notifier)
+                        .updateTaskStatus(
+                      t.id,
+                      status == 1,
+                    );
+                  },
+                ),
               ),
             ],
           ),

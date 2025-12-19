@@ -4,7 +4,11 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/providers/lists_provider.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
+
+import '../../widgets/feedback_widget.dart';
+import '../../widgets/kwanga_dropdown_button.dart';
 
 class CreateOrEditListScreen extends ConsumerStatefulWidget {
   final ListModel? existingList;
@@ -36,8 +40,7 @@ class _CreateOrEditListScreenState
   void initState() {
     super.initState();
     if (isEditing) {
-      _selectedListType =
-          (widget.existingList!.listType);
+      _selectedListType = (widget.existingList!.listType);
       _descriptionController.text = widget.existingList!.description;
     }
   }
@@ -52,8 +55,9 @@ class _CreateOrEditListScreenState
     final isFormValid = _formKey.currentState?.validate() ?? false;
     if (!isFormValid || _selectedListType == null) {
       if (_selectedListType == null) {
-        setState(() =>
-        _listTypeError = 'É obrigatório selecionar um tipo de lista');
+        setState(
+          () => _listTypeError = 'É obrigatório selecionar um tipo de lista',
+        );
       }
       return;
     }
@@ -69,25 +73,16 @@ class _CreateOrEditListScreenState
           description: _descriptionController.text.trim(),
         );
         await notifier.updateList(updatedList);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lista atualizada com sucesso!'),
-          ),
-        );
+        showFeedbackScaffoldMessenger(context, "Lista actualizada com sucesso");
       } else {
         await notifier.addList(
           listType: _selectedListType!,
           description: _descriptionController.text.trim(),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lista adicionada com sucesso!'),
-          ),
-        );
+        showFeedbackScaffoldMessenger(context, "Lista adicionada com sucesso");
       }
 
       if (mounted) Navigator.of(context).pop();
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +102,7 @@ class _CreateOrEditListScreenState
         foregroundColor: cWhiteColor,
         title: Text(isEditing ? 'Editar Lista' : 'Adicionar Lista'),
       ),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -118,53 +114,27 @@ class _CreateOrEditListScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tipo de Lista', style: tNormal),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12.0),
-                          border: Border.all(
-                            color: _listTypeError != null
-                                ? Theme.of(context).colorScheme.error
-                                : cBlackColor,
-                          ),
-                        ),
-                        child: Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            value: _selectedListType,
-                            hint:
-                            const Text('Selecione um tipo de lista'),
-                            items: _listTypes.map((item) {
-                              return DropdownMenuItem<String>(
-                                value: item["value"],
-                                child:
-                                Text(item["label"]!, style: tNormal),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedListType = value;
-                                _listTypeError = null;
-                              });
-                            },
-                          ),
-                        ),
+                      KwangaDropdownButton<String>(
+                        labelText: 'Tipo de Lista',
+                        hintText: 'Selecione um tipo de lista',
+                        errorMessage: _listTypeError,
+
+                        value: _selectedListType,
+                        items: _listTypes.map((item) {
+                          return DropdownMenuItem<String>(
+                            value: item["value"],
+                            child: Text(item["label"]!),
+                          );
+                        }).toList(),
+
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedListType = value;
+                            _listTypeError = null;
+                          });
+                        },
                       ),
-                      if (_listTypeError != null)
-                        Padding(
-                          padding:
-                          const EdgeInsets.only(top: 8.0, left: 12.0),
-                          child: Text(
-                            _listTypeError!,
-                            style: TextStyle(
-                              color:
-                              Theme.of(context).colorScheme.error,
-                              fontSize: 12.0,
-                            ),
-                          ),
-                        ),
+
                       const SizedBox(height: 16.0),
                       Text('Designação', style: tNormal),
                       TextFormField(
@@ -184,22 +154,12 @@ class _CreateOrEditListScreenState
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 12.0,
-                horizontal: 24.0,
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : GestureDetector(
-                onTap: _saveOrUpdateList,
-                child: MainButton(
-                  buttonText: isEditing ? 'Actualizar' : 'Salvar',
-                ),
-              ),
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomActionBar(
+        buttonText: isEditing ? 'Actualizar' : 'Salvar',
+        onPressed: _saveOrUpdateList,
       ),
     );
   }

@@ -51,7 +51,7 @@ class LifeAreaSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               area.designation,
-              style: tNormal.copyWith(fontWeight: FontWeight.w600),
+              style: tSmallTitle,
             ),
           ],
         ),

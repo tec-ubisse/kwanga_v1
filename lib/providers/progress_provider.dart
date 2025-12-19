@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
 
 final progressByListProvider =
 Provider.family<Map<String, int>, String>((ref, listId) {

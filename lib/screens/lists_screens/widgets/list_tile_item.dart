@@ -16,6 +16,7 @@ class ListTileItem extends ConsumerWidget {
   final VoidCallback? onLongPress;
   final bool isSelected;
   final bool isEditable;
+  final bool showProgress;
 
   const ListTileItem({
     super.key,
@@ -25,6 +26,7 @@ class ListTileItem extends ConsumerWidget {
     required this.isEditable,
     this.onTap,
     this.onLongPress,
+    this.showProgress = true,
   });
 
   @override
@@ -32,53 +34,11 @@ class ListTileItem extends ConsumerWidget {
     final progress = ref.watch(progressForListProvider(listModel.id));
 
     final isActionList = listModel.listType == "action";
-
     final total = progress['total'] ?? 0;
     final completed = progress['completed'] ?? 0;
+    final entryCount = total == 1 ? "item" : "itens";
 
-    return ListTile(
-      tileColor: const Color(0xffEAEFF4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-
-      title: Text(
-        listModel.description,
-        style: tTitle.copyWith(
-          color: isSelected ? cWhiteColor : cBlackColor,
-          fontSize: 18,
-        ),
-      ),
-
-      subtitle: isEditable
-          ? Row(
-        children: [
-          if (isActionList && total > 0)
-            SizedBox(
-              height: 22,
-              width: 22,
-              child: CircularProgressIndicator(
-                value: total == 0 ? 0 : (completed / total),
-                backgroundColor: cSecondaryColor.withAlpha(50),
-                color: cSecondaryColor.withAlpha(200),
-              ),
-            ),
-          const SizedBox(width: 8),
-          Text(
-            isActionList
-                ? "$completed / $total concluídas"
-                : "Lista de Entradas",
-            style: tNormal.copyWith(
-              color: isSelected ? cWhiteColor : Colors.grey[700],
-            ),
-          ),
-        ],
-      )
-          : Text(
-        listModel.listType == 'entry' ? "Lista de Entradas" : "Lista de Acções",
-        style: tNormal,
-      ),
-
+    return GestureDetector(
       onTap: () async {
         onTap?.call();
 
@@ -90,8 +50,74 @@ class ListTileItem extends ConsumerWidget {
           );
         }
       },
+      onLongPress: onLongPress,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xffEAEFF4),
+          // borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // TEXTOS
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  listModel.description,
+                  style: tTitle.copyWith(
+                    color: isSelected ? cWhiteColor : cBlackColor,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                isEditable
+                    ? Text(
+                  isActionList
+                      ? "$completed / $total concluídas"
+                      : "$total $entryCount de entrada",
+                  style: tNormal.copyWith(
+                    color: isSelected
+                        ? cWhiteColor
+                        : Colors.grey[700],
+                  ),
+                )
+                    : Text(
+                  listModel.listType == 'entry'
+                      ? "Lista de Entradas"
+                      : "Lista de Acções",
+                  style: tNormal,
+                ),
+              ],
+            ),
 
-      onLongPress: () => onLongPress?.call(),
+            // PROGRESSO
+            if (showProgress && isActionList && total > 0)
+              SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  value: completed / total,
+                  backgroundColor: cSecondaryColor.withAlpha(50),
+                  color: cSecondaryColor.withAlpha(200),
+                  strokeWidth: 4,
+                ),
+              ),
+            if (showProgress && isActionList && total == 0)
+              SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  value: 0.0,
+                  backgroundColor: cSecondaryColor.withAlpha(50),
+                  color: cSecondaryColor.withAlpha(200),
+                  strokeWidth: 4,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

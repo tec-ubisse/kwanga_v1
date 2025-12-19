@@ -9,14 +9,12 @@ import 'package:kwanga/widgets/kwanga_dropdown_button.dart';
 
 import '../../widgets/buttons/bottom_action_bar.dart';
 import '../../models/project_model.dart';
+import '../../widgets/feedback_widget.dart';
 
 class CreateProjectScreen extends ConsumerStatefulWidget {
   final ProjectModel? projectToEdit;
 
-  const CreateProjectScreen({
-    super.key,
-    this.projectToEdit,
-  });
+  const CreateProjectScreen({super.key, this.projectToEdit});
 
   @override
   ConsumerState<CreateProjectScreen> createState() =>
@@ -24,12 +22,17 @@ class CreateProjectScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   String? selectedMonthlyGoalId;
+  String? monthlyGoalError;
   int selectedMonth = DateTime.now().month;
 
   final titleController = TextEditingController();
   final purposeController = TextEditingController();
   final expectedController = TextEditingController();
+
+  bool get isEditing => widget.projectToEdit != null;
 
   @override
   void initState() {
@@ -41,16 +44,6 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
       purposeController.text = project.purpose ?? "";
       expectedController.text = project.expectedResult ?? "";
       selectedMonthlyGoalId = project.monthlyGoalId;
-
-      // Determinar mês a partir do MonthlyGoal
-      final mgList = ref.read(monthlyGoalsProvider).value;
-      if (mgList != null) {
-        final mg = mgList.firstWhere(
-              (m) => m.id == project.monthlyGoalId,
-          orElse: () => mgList.first,
-        );
-        selectedMonth = mg.month;
-      }
     }
   }
 
@@ -62,177 +55,179 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
     super.dispose();
   }
 
+  Future<void> _save() async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+
+    if (selectedMonthlyGoalId == null) {
+      setState(() => monthlyGoalError = 'O objectivo mensal é obrigatório');
+    }
+
+    if (!isValid || selectedMonthlyGoalId == null) return;
+
+    final auth = ref.read(authProvider).value;
+    if (auth?.id == null) return;
+
+    final notifier = ref.read(projectsProvider.notifier);
+
+    if (isEditing) {
+      final updated = widget.projectToEdit!.copyWith(
+        monthlyGoalId: selectedMonthlyGoalId!,
+        title: titleController.text.trim(),
+        purpose: purposeController.text.trim(),
+        expectedResult: expectedController.text.trim(),
+      );
+      await notifier.editProject(updated);
+      showFeedbackScaffoldMessenger(context, "Projecto actualizado com sucesso");
+    } else {
+      await notifier.addProject(
+        userId: auth!.id!,
+        monthlyGoalId: selectedMonthlyGoalId!,
+        title: titleController.text.trim(),
+        purpose: purposeController.text.trim(),
+        expectedResult: expectedController.text.trim(),
+      );
+      showFeedbackScaffoldMessenger(context, "Projecto adicionado com sucesso");
+    }
+
+    if (mounted) Navigator.pop(context, "saved");
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthlyGoalsAsync = ref.watch(monthlyGoalsProvider);
-    final auth = ref.read(authProvider).value;
 
     const monthNames = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+      'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.projectToEdit == null
-              ? 'Novo Projecto'
-              : 'Editar Projecto',
-          style: tTitle,
-        ),
-        leading: BackButton(onPressed: () => Navigator.of(context).pop()),
+        title: Text(isEditing ? 'Editar Projecto' : 'Novo Projecto', style: tTitle),
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
       ),
-      backgroundColor: cWhiteColor,
 
       bottomNavigationBar: BottomActionBar(
-        buttonText: "Salvar",
-        onPressed: () async {
-          if (auth == null || auth.id == null) return;
-
-          if (selectedMonthlyGoalId == null ||
-              titleController.text.trim().isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Preencha todos os campos se faz favor!"),
-              ),
-            );
-            return;
-          }
-
-          final notifier = ref.read(projectsProvider.notifier);
-
-          // --------------------------
-          // CRIAR
-          // --------------------------
-          if (widget.projectToEdit == null) {
-            await notifier.addProject(
-              userId: auth.id!,
-              monthlyGoalId: selectedMonthlyGoalId!,
-              title: titleController.text.trim(),
-              purpose: purposeController.text.trim(),
-              expectedResult: expectedController.text.trim(),
-            );
-          }
-
-          // --------------------------
-          // EDITAR
-          // --------------------------
-          else {
-            final updated = widget.projectToEdit!.copyWith(
-              monthlyGoalId: selectedMonthlyGoalId!,
-              title: titleController.text.trim(),
-              purpose: purposeController.text.trim(),
-              expectedResult: expectedController.text.trim(),
-            );
-
-            await notifier.editProject(updated);
-          }
-
-          Navigator.pop(context, "saved");
-        },
+        buttonText: isEditing ? "Actualizar" : "Salvar",
+        onPressed: _save,
       ),
 
       body: Padding(
         padding: defaultPadding,
-        child: ListView(
-          children: [
-            // -------------------------
-            // Selecionar mês
-            // -------------------------
-            Text("Mês", style: tSmallTitle),
-            const SizedBox(height: 8),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              // ---------------- MÊS ----------------
+              Text("Mês", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-            KwangaDropdownButton<int>(
-              value: selectedMonth,
-              items: List.generate(
-                12,
-                    (i) => DropdownMenuItem(
-                  value: i + 1,
-                  child: Text(monthNames[i]),
+              KwangaDropdownButton<int>(
+                value: selectedMonth,
+                items: List.generate(
+                  12,
+                      (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text(monthNames[i]),
+                  ),
                 ),
+                onChanged: (m) {
+                  setState(() {
+                    selectedMonth = m!;
+                    selectedMonthlyGoalId = null;
+                    monthlyGoalError = null;
+                  });
+                },
+                labelText: '',
+                hintText: '',
               ),
-              onChanged: (m) {
-                setState(() {
-                  selectedMonth = m!;
-                  selectedMonthlyGoalId = null;
-                });
-              },
-            ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // -------------------------
-            // Objectivo Mensal
-            // -------------------------
-            Text("Objectivo Mensal", style: tSmallTitle),
-            const SizedBox(height: 8),
+              // ----------- OBJECTIVO MENSAL ----------
+              Text("Objectivo Mensal", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-            monthlyGoalsAsync.when(
-              data: (monthlyGoals) {
-                final goalsForMonth =
-                monthlyGoals.where((mg) => mg.month == selectedMonth).toList();
+              monthlyGoalsAsync.when(
+                data: (goals) {
+                  final filtered =
+                  goals.where((g) => g.month == selectedMonth).toList();
 
-                return KwangaDropdownButton<String>(
-                  value: selectedMonthlyGoalId,
-                  items: goalsForMonth
-                      .map(
-                        (mg) => DropdownMenuItem(
-                      value: mg.id,
-                      child: Text(mg.description),
-                    ),
-                  )
-                      .toList(),
-                  onChanged: (val) => setState(() => selectedMonthlyGoalId = val),
-                );
-              },
-              loading: () => const CircularProgressIndicator(),
-              error: (e, _) => Text("Erro: $e"),
-            ),
+                  return KwangaDropdownButton<String>(
+                    value: selectedMonthlyGoalId,
+                    errorMessage: monthlyGoalError,
+                    items: filtered
+                        .map(
+                          (g) => DropdownMenuItem(
+                        value: g.id,
+                        child: Text(g.description),
+                      ),
+                    )
+                        .toList(),
+                    onChanged: (v) => setState(() {
+                      selectedMonthlyGoalId = v;
+                      monthlyGoalError = null;
+                    }),
+                    labelText: '',
+                    hintText: 'Seleccione um objectivo mensal',
+                  );
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (e, _) => Text("Erro: $e"),
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // -------------------------
-            // Título
-            // -------------------------
-            Text("Título", style: tSmallTitle),
-            const SizedBox(height: 8),
+              // ---------------- TÍTULO ----------------
+              Text("Título", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-            TextFormField(
-              controller: titleController,
-              maxLines: 2,
-              decoration: inputDecoration,
-            ),
+              TextFormField(
+                controller: titleController,
+                maxLines: 2,
+                decoration: inputDecoration,
+                validator: (v) =>
+                v == null || v.trim().isEmpty ? 'O título é obrigatório' : null,
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // -------------------------
-            // Propósito
-            // -------------------------
-            Text("Propósito", style: tSmallTitle),
-            const SizedBox(height: 8),
+              // --------------- PROPÓSITO --------------
+              Text("Propósito", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-            TextFormField(
-              controller: purposeController,
-              maxLines: 3,
-              decoration: inputDecoration,
-            ),
+              TextFormField(
+                controller: purposeController,
+                maxLines: 3,
+                decoration: inputDecoration,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'O propósito é obrigatório';
+                  }
+                  return null;
+                },
+              ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // -------------------------
-            // Resultado Esperado
-            // -------------------------
-            Text("Resultado Esperado", style: tSmallTitle),
-            const SizedBox(height: 8),
+              // ----------- RESULTADO ESPERADO ----------
+              Text("Resultado Esperado", style: tSmallTitle),
+              const SizedBox(height: 8),
 
-            TextFormField(
-              controller: expectedController,
-              maxLines: 3,
-              decoration: inputDecoration,
-            ),
-          ],
+              TextFormField(
+                controller: expectedController,
+                maxLines: 3,
+                decoration: inputDecoration,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'O resultado esperado é obrigatório';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

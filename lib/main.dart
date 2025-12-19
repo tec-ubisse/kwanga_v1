@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
@@ -33,6 +34,19 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
+
+      // 🔹 LOCALIZAÇÃO (OBRIGATÓRIA PARA DATE/TIME PICKERS)
+      locale: const Locale('pt'),
+      supportedLocales: const [
+        Locale('pt'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
       home: authState.when(
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),

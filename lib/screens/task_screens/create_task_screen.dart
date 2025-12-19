@@ -9,21 +9,20 @@ import 'package:kwanga/models/task_model.dart';
 
 import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/providers/lists_provider.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
+import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 
+import '../../widgets/feedback_widget.dart';
+import '../../widgets/kwanga_dropdown_button.dart';
 import 'widgets/date_option_selector.dart';
 import 'widgets/task_switch_row.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
-  const CreateTaskScreen({
-    super.key,
-    required this.listModel,
-    this.taskModel,
-  });
+  const CreateTaskScreen({super.key, required this.listModel, this.taskModel});
 
-  final ListModel listModel;      // lista selecionada
-  final TaskModel? taskModel;     // null → criar | not null → editar
+  final ListModel listModel;
+  final TaskModel? taskModel;
 
   @override
   ConsumerState<CreateTaskScreen> createState() => _CreateTaskScreenState();
@@ -35,8 +34,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
   bool get isEditing => widget.taskModel != null;
 
-  late bool isAction;                // listType = action
-  String? _selectedListId;           // list destino
+  late bool isAction; // listType = action
+  String? _selectedListId; // list destino
   DateTime? _selectedDate;
 
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
@@ -58,8 +57,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       text: widget.taskModel?.description ?? '',
     );
 
-    _selectedListId =
-    isEditing ? widget.taskModel!.listId : widget.listModel.id;
+    _selectedListId = isEditing
+        ? widget.taskModel!.listId
+        : widget.listModel.id;
 
     if (isEditing) {
       final t = widget.taskModel!;
@@ -68,10 +68,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
       if (t.time != null) {
         _reminderEnabled = true;
-        _selectedTime = TimeOfDay(
-          hour: t.time!.hour,
-          minute: t.time!.minute,
-        );
+        _selectedTime = TimeOfDay(hour: t.time!.hour, minute: t.time!.minute);
       }
 
       if (t.frequency != null && t.frequency!.isNotEmpty) {
@@ -87,9 +84,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     super.dispose();
   }
 
-  // ------------------------------------------------------------
-  // DETECTA AUTOMATICAMENTE PROJECTO
-  // ------------------------------------------------------------
   String? _extractProjectId(String listId) {
     if (listId.startsWith("project-")) {
       return listId.substring("project-".length);
@@ -97,9 +91,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     return null;
   }
 
-  // ------------------------------------------------------------
-  // SAVE OR UPDATE
-  // ------------------------------------------------------------
   Future<void> _saveOrUpdateTask() async {
     final msg = isAction ? "Tarefa" : "Entrada";
 
@@ -127,9 +118,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
       final projectId = _extractProjectId(_selectedListId!);
 
-      // -------------------------
-      //   EDITAR EXISTENTE
-      // -------------------------
       if (isEditing) {
         final updatedTask = widget.taskModel!.copyWith(
           listId: _selectedListId!,
@@ -146,16 +134,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
         if (mounted) Navigator.of(context).pop(updatedTask);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$msg atualizada com sucesso.')),
-        );
+        showFeedbackScaffoldMessenger(context, "$msg actualizada com sucesso");
 
         return;
       }
 
-      // -------------------------
-      //      CRIAR NOVA
-      // -------------------------
       final newTask = TaskModel(
         userId: userId,
         listId: _selectedListId!,
@@ -174,15 +157,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
       if (mounted) Navigator.of(context).pop(newTask);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$msg adicionada com sucesso.')),
-      );
-
+      showFeedbackScaffoldMessenger(context, "$msg adicionada com sucesso");
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -201,6 +181,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         foregroundColor: cWhiteColor,
       ),
       backgroundColor: Colors.white,
+      bottomNavigationBar: BottomActionBar(
+        buttonText: isEditing ? 'Actualizar' : 'Salvar',
+        onPressed: _saveOrUpdateTask,
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -209,11 +193,13 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 padding: defaultPadding,
                 child: asyncLists.when(
                   loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+                      const Center(child: CircularProgressIndicator()),
                   error: (err, st) => Center(child: Text("Erro: $err")),
                   data: (lists) {
                     if (lists.isEmpty) {
-                      return const Center(child: Text("Nenhuma lista disponível."));
+                      return const Center(
+                        child: Text("Nenhuma lista disponível."),
+                      );
                     }
 
                     // apenas listas do mesmo tipo (action/entry)
@@ -221,8 +207,10 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                         .where((l) => l.listType == widget.listModel.listType)
                         .toList();
 
-                    final selected =
-                    filtered.firstWhere((l) => l.id == _selectedListId, orElse: () => filtered.first);
+                    final selected = filtered.firstWhere(
+                      (l) => l.id == _selectedListId,
+                      orElse: () => filtered.first,
+                    );
 
                     return Form(
                       key: _formKey,
@@ -231,45 +219,23 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Escolha uma lista", style: tNormal),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _listTypeError != null
-                                    ? Theme.of(context).colorScheme.error
-                                    : cBlackColor,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: selected.id,
-                                underline: const SizedBox.shrink(),
-                                items: filtered.map((l) {
-                                  return DropdownMenuItem(
-                                    value: l.id,
-                                    child: Text(l.description),
-                                  );
-                                }).toList(),
-                                onChanged: (v) => setState(() {
-                                  _selectedListId = v;
-                                  _listTypeError = null;
-                                }),
-                              ),
-                            ),
+                          KwangaDropdownButton<String>(
+                            value: _selectedListId,
+                            errorMessage: _listTypeError,
+                            items: filtered.map((l) {
+                              return DropdownMenuItem(
+                                value: l.id,
+                                child: Text(l.description),
+                              );
+                            }).toList(),
+                            onChanged: (v) => setState(() {
+                              _selectedListId = v;
+                              _listTypeError = null;
+                            }),
+                            labelText: '',
+                            hintText: 'Seleccione uma lista',
                           ),
-                          if (_listTypeError != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                _listTypeError!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
+
 
                           const SizedBox(height: 16),
                           Text("Descrição", style: tNormal),
@@ -279,21 +245,22 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                               labelText: "Descrição",
                             ),
                             maxLines: 3,
-                            validator: (v) =>
-                            (v == null || v.trim().isEmpty)
+                            validator: (v) => (v == null || v.trim().isEmpty)
                                 ? "Este campo é obrigatório"
                                 : null,
                           ),
 
                           if (isAction) ...[
                             DateOptionSelector(
-                              onDateChanged: (d) => setState(() => _selectedDate = d),
+                              onDateChanged: (d) =>
+                                  setState(() => _selectedDate = d),
                             ),
 
                             TaskSwitchRow.reminder(
                               enabled: _reminderEnabled,
                               time: _selectedTime,
-                              onChanged: (v) => setState(() => _reminderEnabled = v),
+                              onChanged: (v) =>
+                                  setState(() => _reminderEnabled = v),
                               onTimePicked: (t) =>
                                   setState(() => _selectedTime = t),
                             ),
@@ -312,19 +279,6 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                     );
                   },
                 ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: 24,
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : GestureDetector(
-                onTap: _saveOrUpdateTask,
-                child: const MainButton(buttonText: "Salvar"),
               ),
             ),
           ],

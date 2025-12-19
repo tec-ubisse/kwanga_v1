@@ -5,6 +5,7 @@ import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import '../../models/life_area_model.dart';
+import '../../widgets/feedback_widget.dart';
 
 class CreateLifeAreaScreen extends ConsumerStatefulWidget {
   final LifeAreaModel? areaToEdit;
@@ -31,8 +32,6 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
     if (widget.areaToEdit != null) {
       _controller.text = widget.areaToEdit!.designation;
 
-      // Extrai o número do ícone do path
-      // Exemplo: "assets/icons/5.png" → index = 4 (grid começa em 0)
       final iconPath = widget.areaToEdit!.iconPath;
       final match = RegExp(r'(\d+)\.png').firstMatch(iconPath);
 
@@ -67,6 +66,7 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
           designation: _controller.text.trim(),
           iconPath: iconPath,
         );
+        showFeedbackScaffoldMessenger(context, "Área adicionada com sucesso");
       } else {
         // MODO EDITAR
         final updated = widget.areaToEdit!.copyWith(
@@ -77,6 +77,7 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
         );
 
         await ref.read(lifeAreasProvider.notifier).updateLifeArea(updated);
+        showFeedbackScaffoldMessenger(context, "Área actualizada com sucesso");
       }
 
       if (!mounted) return;
@@ -221,8 +222,8 @@ class _CreateLifeAreaScreenState extends ConsumerState<CreateLifeAreaScreen> {
       ),
       bottomNavigationBar: BottomActionBar(
         buttonText: _isSaving
-            ? (isEditing ? 'Atualizando...' : 'Salvando...')
-            : (isEditing ? 'Atualizar' : 'Salvar'),
+            ? (isEditing ? 'Actualizando...' : 'Salvando...')
+            : (isEditing ? 'Actualizar' : 'Salvar'),
         onPressed: _isSaving ? null : () { _saveLifeArea(); },
       ),
     );

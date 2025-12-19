@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/widgets/cards/kwanga_empty_card.dart';
-import 'package:kwanga/widgets/custom_drawer.dart';
+import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/widgets/kwanga_dropdown_button.dart';
 
@@ -100,7 +100,7 @@ class _VisionsScreenState extends ConsumerState<VisionsScreen> {
                         .toList(),
                     onChanged: (value) {
                       setState(() => selectedYear = value);
-                    },
+                    }, labelText: '', hintText: '',
                   ),
                 ),
               ),
@@ -166,7 +166,7 @@ class _VisionsScreenState extends ConsumerState<VisionsScreen> {
                                       );
                                     }).toList(),
                                   )
-                                : KwangaEmptyCard(message: 'Sem visão definida para este ano.'),
+                                : KwangaEmptyCard(message: 'Sem visão definida\npara este ano.'),
                           ),
                         ],
                       ),

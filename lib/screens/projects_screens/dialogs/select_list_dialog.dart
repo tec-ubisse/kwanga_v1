@@ -26,28 +26,42 @@ class SelectListDialog extends StatelessWidget {
               color: Color(0xFF235E8B),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: const Text(
-              "Alocar à lista",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+            child: Row(
+              spacing: 8.0,
+              children: [
+                Icon(Icons.send, color: Colors.white, size: 18.0,),
+                const Text(
+                  "Alocar à lista",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          ...List.generate(lists.length, (i) {
-            final l = lists[i];
-            return Column(
-              children: [
-                ListTile(
-                  title: Text(l.description, style: tNormal),
-                  onTap: () => Navigator.pop(context, l.id),
-                ),
-                if (i < lists.length - 1) const Divider(height: 1),
-              ],
-            );
-          }),
+          // Área scrollável com altura máxima
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: lists.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, i) {
+                  final l = lists[i];
+                  return ListTile(
+                    title: Text(l.description, style: tNormal),
+                    onTap: () => Navigator.pop(context, l.id),
+                  );
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -6,24 +6,25 @@ import 'package:kwanga/custom_themes/text_style.dart';
 
 import 'package:kwanga/models/annual_goal_model.dart';
 import 'package:kwanga/models/vision_model.dart';
+
 import 'package:kwanga/providers/annual_goals_provider.dart';
 import 'package:kwanga/providers/visions_provider.dart';
 import 'package:kwanga/providers/life_area_provider.dart';
 
-import 'create_annual_goal_widgets/description_field.dart';
-import 'create_annual_goal_widgets/vision_card.dart';
-import 'create_annual_goal_widgets/year_dropdown.dart';
+import 'package:kwanga/widgets/feedback_widget.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
+import '../../widgets/kwanga_dropdown_button.dart';
 
-import '../annual_goals_screens/widgets/vision_selector.dart';
+import 'create_annual_goal_widgets/description_field.dart';
+import 'create_annual_goal_widgets/year_dropdown.dart';
+
+import '../../utils/form_validators.dart';
 
 class CreateAnnualGoalScreen extends ConsumerStatefulWidget {
   final String? visionId;
   final AnnualGoalModel? annualGoalToEdit;
   final int? preselectedYear;
   final String? lifeAreaId;
-
-  /// Novo parâmetro para bloquear o ano
   final bool lockYear;
 
   const CreateAnnualGoalScreen({
@@ -43,7 +44,7 @@ class CreateAnnualGoalScreen extends ConsumerStatefulWidget {
 class _CreateAnnualGoalScreenState
     extends ConsumerState<CreateAnnualGoalScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _description = TextEditingController();
+  final _description = TextEditingController();
 
   String? _selectedVisionId;
   int? _selectedYear;
@@ -65,24 +66,21 @@ class _CreateAnnualGoalScreenState
     }
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  @override
+  void dispose() {
+    _description.dispose();
+    super.dispose();
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedVisionId == null) return _snack("Selecione uma visão");
-    if (_selectedYear == null) return _snack("Selecione o ano");
+    final isValid = _formKey.currentState!.validate();
+    if (!isValid) return;
 
     final visions =
         ref.read(visionsProvider).asData?.value ?? <VisionModel>[];
 
-    final vision = visions.firstWhere(
-          (v) => v.id == _selectedVisionId,
-      orElse: () => throw ("Visão não encontrada."),
-    );
-
-    if (vision.userId == null) return _snack("Utilizador não encontrado.");
+    final vision =
+    visions.firstWhere((v) => v.id == _selectedVisionId);
 
     final desc = _description.text.trim();
 
@@ -94,44 +92,62 @@ class _CreateAnnualGoalScreenState
         isSynced: false,
       );
 
-      await ref.read(annualGoalsProvider.notifier).editAnnualGoal(updated);
+      await ref
+          .read(annualGoalsProvider.notifier)
+          .editAnnualGoal(updated);
+
+      showFeedbackScaffoldMessenger(
+        context,
+        "Objectivo actualizado com sucesso",
+      );
     } else {
-      await ref.read(annualGoalsProvider.notifier).addAnnualGoal(
-        userId: vision.userId!,
+      await ref
+          .read(annualGoalsProvider.notifier)
+          .addAnnualGoal(
+        userId: vision.userId,
         visionId: _selectedVisionId!,
         description: desc,
         year: _selectedYear!,
       );
+
+      showFeedbackScaffoldMessenger(
+        context,
+        "Objectivo adicionado com sucesso",
+      );
     }
 
     ref.invalidate(annualGoalsProvider);
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final visionsAsync = ref.watch(visionsProvider);
-    final lifeAreasAsync = ref.watch(lifeAreasProvider);
+    ref.watch(lifeAreasProvider); // mantém dependência viva
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isEditing ? "Editar objectivo anual" : "Criar objectivo anual",
+          isEditing
+              ? "Editar objectivo anual"
+              : "Criar objectivo anual",
         ),
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
       ),
 
       bottomNavigationBar: BottomActionBar(
-        buttonText: isEditing ? "Guardar alterações" : "Criar objectivo anual",
+        buttonText:
+        isEditing ? "Actualizar" : "Criar objectivo anual",
         onPressed: _save,
       ),
 
       body: visionsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text("Erro ao carregar visões: $e")),
+        loading: () =>
+        const Center(child: CircularProgressIndicator()),
+        error: (e, _) =>
+            Center(child: Text("Erro ao carregar visões: $e")),
         data: (visions) {
-          // Filtrar quando lifeAreaId vier preenchido
           List<VisionModel> filteredVisions;
 
           if (widget.lifeAreaId != null) {
@@ -139,16 +155,16 @@ class _CreateAnnualGoalScreenState
                 .where((v) => v.lifeAreaId == widget.lifeAreaId)
                 .toList();
 
-            if (_selectedVisionId == null && filteredVisions.length == 1) {
+            if (_selectedVisionId == null &&
+                filteredVisions.length == 1) {
               _selectedVisionId = filteredVisions.first.id;
             }
           } else {
             filteredVisions = visions;
           }
 
-          // Visão bloqueada (edição ou pré-selecionada via NoGoalCard)
           VisionModel? lockedVision;
-          if (_selectedVisionId != null && filteredVisions.isNotEmpty) {
+          if (_selectedVisionId != null) {
             lockedVision = filteredVisions
                 .where((v) => v.id == _selectedVisionId)
                 .firstOrNull;
@@ -161,44 +177,81 @@ class _CreateAnnualGoalScreenState
               child: ListView(
                 children: [
                   const SizedBox(height: 16),
-                  Text("Visão", style: tNormal),
+
+                  Text("Visão", style: tSmallTitle),
                   const SizedBox(height: 8),
 
-                  /// 🔥 Se a visão está bloqueada → mostrar cartão fixo
-                  if (lockedVision != null) ...[
-                    VisionCard(
-                      vision: lockedVision,
-                      lifeAreasAsync: lifeAreasAsync,
-                    ),
-                  ]
-                  /// 🔥 Caso contrário → deixar o usuário escolher a visão
-                  else ...[
-                    VisionSelector(
-                      visions: filteredVisions,
-                      selectedVisionId: _selectedVisionId,
-                      onChanged: (v) => setState(() => _selectedVisionId = v),
-                    ),
-                  ],
-
-                  const SizedBox(height: 20),
-                  Text("Ano", style: tNormal),
-                  const SizedBox(height: 6),
-
-                  YearDropdown(
-                    lockedVision: lockedVision,
-                    selectedYear: _selectedYear,
-                    onChanged: widget.lockYear
-                        ? null
-                        : (v) => setState(() => _selectedYear = v),
+                  FormField<String>(
+                    initialValue: _selectedVisionId,
+                    validator: (v) =>
+                        FormValidators.requiredSelection(
+                          v,
+                          message: 'Selecione uma visão',
+                        ),
+                    builder: (state) {
+                      return KwangaDropdownButton<String>(
+                        value: _selectedVisionId,
+                        items: filteredVisions
+                            .map(
+                              (v) => DropdownMenuItem<String>(
+                            value: v.id,
+                            child: Text(v.description),
+                          ),
+                        )
+                            .toList(),
+                        onChanged: (v) {
+                          setState(() =>
+                          _selectedVisionId = v);
+                          state.didChange(v);
+                        },
+                        labelText: '',
+                        hintText: 'Selecione uma visão',
+                        errorMessage: state.errorText,
+                      );
+                    },
                   ),
 
-                  const SizedBox(height: 20),
-                  Text("Descrição do objectivo", style: tNormal),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 24),
 
-                  DescriptionField(controller: _description),
+                  Text("Ano", style: tSmallTitle),
+                  const SizedBox(height: 8),
 
-                  const SizedBox(height: 100),
+                  FormField<int>(
+                    initialValue: _selectedYear,
+                    validator: (v) =>
+                        FormValidators.requiredSelection(
+                          v,
+                          message: 'Selecione o ano',
+                        ),
+                    builder: (state) {
+                      return YearDropdown(
+                        lockedVision: lockedVision,
+                        selectedYear: _selectedYear,
+                        onChanged: widget.lockYear
+                            ? null
+                            : (v) {
+                          setState(() =>
+                          _selectedYear = v);
+                          state.didChange(v);
+                        },
+                        errorMessage: state.errorText,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Text(
+                    "Descrição do objectivo",
+                    style: tSmallTitle,
+                  ),
+                  const SizedBox(height: 8),
+
+                  DescriptionField(
+                    controller: _description,
+                  ),
+
+                  const SizedBox(height: 120),
                 ],
               ),
             ),

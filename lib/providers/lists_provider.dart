@@ -13,22 +13,27 @@ import 'package:uuid/uuid.dart';
 class ListFilterNotifier extends Notifier<int> {
   @override
   int build() => 0;
+
   void setFilter(int index) => state = index;
 }
 
-final listFilterProvider =
-NotifierProvider<ListFilterNotifier, int>(ListFilterNotifier.new);
+final listFilterProvider = NotifierProvider<ListFilterNotifier, int>(
+  ListFilterNotifier.new,
+);
 
 class ListSelectionModeNotifier extends Notifier<bool> {
   @override
   bool build() => false;
+
   void enable() => state = true;
+
   void disable() => state = false;
 }
 
 final listSelectionModeProvider =
-NotifierProvider<ListSelectionModeNotifier, bool>(
-    ListSelectionModeNotifier.new);
+    NotifierProvider<ListSelectionModeNotifier, bool>(
+      ListSelectionModeNotifier.new,
+    );
 
 class SelectedListsNotifier extends Notifier<Set<String>> {
   @override
@@ -44,8 +49,9 @@ class SelectedListsNotifier extends Notifier<Set<String>> {
 }
 
 final selectedListsProvider =
-NotifierProvider<SelectedListsNotifier, Set<String>>(
-    SelectedListsNotifier.new);
+    NotifierProvider<SelectedListsNotifier, Set<String>>(
+      SelectedListsNotifier.new,
+    );
 
 /// ------------------------------------------------------------
 ///  DAO Provider
@@ -57,14 +63,11 @@ final listsByIdProvider = Provider<Map<String, String>>((ref) {
   final asyncLists = ref.watch(taskListsProvider);
 
   return asyncLists.when(
-    data: (lists) => {
-      for (final l in lists) l.id: l.description,
-    },
+    data: (lists) => {for (final l in lists) l.id: l.description},
     loading: () => {},
     error: (_, __) => {},
   );
 });
-
 
 final appMessageProvider = NotifierProvider<AppMessageNotifier, String?>(
   AppMessageNotifier.new,
@@ -75,9 +78,9 @@ class AppMessageNotifier extends Notifier<String?> {
   String? build() => null;
 
   void show(String msg) => state = msg;
+
   void clear() => state = null;
 }
-
 
 /// ------------------------------------------------------------
 ///  LISTS NOTIFIER (AsyncNotifier)
@@ -92,10 +95,9 @@ class ListsNotifier extends AsyncNotifier<List<ListModel>> {
       data: (user) async {
         if (user == null || user.id == null) return [];
         // Aqui EXCLUÍMOS listas de projecto da UI
-        return await ref.read(listDaoProvider).getAllByUser(
-          user.id!,
-          excludeProject: true,
-        );
+        return await ref
+            .read(listDaoProvider)
+            .getAllByUser(user.id!, excludeProject: true);
       },
       orElse: () => [],
     );
@@ -189,8 +191,8 @@ class ListsNotifier extends AsyncNotifier<List<ListModel>> {
 /// ------------------------------------------------------------
 /// FINAL PROVIDER
 /// ------------------------------------------------------------
-final listsProvider =
-AsyncNotifierProvider<ListsNotifier, List<ListModel>>(ListsNotifier.new);
+final listsProvider = AsyncNotifierProvider<ListsNotifier, List<ListModel>>(
+  ListsNotifier.new,
 
-
+);
 

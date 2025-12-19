@@ -28,103 +28,109 @@ class VisionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(24),
-            blurRadius: 8,
-            offset: const Offset(4, 4),
-            spreadRadius: -1,
-          )
-        ]
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadiusGeometry.circular(16.0),
-        child: Slidable(
-          key: ValueKey(vision.id),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(24),
+              blurRadius: 8,
+              offset: const Offset(4, 4),
+              spreadRadius: -1,
+            )
+          ]
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadiusGeometry.circular(16.0),
+          child: Slidable(
+            key: ValueKey(vision.id),
 
-          endActionPane: ActionPane(
-            motion: const DrawerMotion(),
-            extentRatio: 0.50,
-            children: [
-              // EDITAR
-              SlidableAction(
-                onPressed: (_) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (ctx) => CreateVision(
-                        visionToEdit: vision,
-                        lifeAreaId: vision.lifeAreaId,
+            endActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.50,
+              children: [
+                // EDITAR
+                SlidableAction(
+                  onPressed: (_) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (ctx) => CreateVision(
+                          visionToEdit: vision,
+                          lifeAreaId: vision.lifeAreaId,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                backgroundColor: cSecondaryColor,
-                foregroundColor: Colors.white,
-                icon: Icons.edit,
-                label: 'Editar',
-              ),
+                    );
+                  },
+                  backgroundColor: cSecondaryColor,
+                  foregroundColor: Colors.white,
+                  icon: Icons.edit,
+                  label: 'Editar',
+                ),
 
-              // REMOVER
-              SlidableAction(
-                onPressed: (_) async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => KwangaDeleteDialog(
-                      title: "Eliminar Visão",
-                      message:
-                      "Tem a certeza que pretende eliminar a visão \"${vision.description}\"? Esta acção é irreversível.",
-                    ),
-                  );
-
-                  if (confirm == true) {
-                    await ref
-                        .read(visionsProvider.notifier)
-                        .deleteVision(vision.id);
-                    ref.invalidate(visionsProvider);
-                  }
-                },
-                backgroundColor: cTertiaryColor,
-                foregroundColor: Colors.white,
-                icon: Icons.delete,
-                label: 'Eliminar',
-              ),
-            ],
-          ),
-
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              color: Colors.white,
-              child: Padding(
-                padding: defaultPadding,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        vision.description,
-                        style: tNormal,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                // REMOVER
+                SlidableAction(
+                  onPressed: (_) async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => KwangaDeleteDialog(
+                        title: "Eliminar Visão",
+                        message:
+                        "Tem a certeza que pretende eliminar a visão \"${vision.description}\"? Esta acção é irreversível.",
                       ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: CircularPercentIndicator(
-                        radius: 32.0,
-                        lineWidth: 12.0,
-                        percent: 0.1,
-                        center: Text('5%'),
-                        progressColor: cMainColor,
-                        backgroundColor: Colors.grey.shade300,
-                        circularStrokeCap: CircularStrokeCap.round,
+                    );
+
+                    if (confirm == true) {
+                      await ref
+                          .read(visionsProvider.notifier)
+                          .deleteVision(vision.id);
+                      ref.invalidate(visionsProvider);
+                    }
+                  },
+                  backgroundColor: cTertiaryColor,
+                  foregroundColor: Colors.white,
+                  icon: Icons.delete,
+                  label: 'Eliminar',
+                ),
+              ],
+            ),
+
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                color: Colors.white,
+                child: Padding(
+                  padding: defaultPadding,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          vision.description,
+                          style: tNormal,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Expanded(
+                          flex: 1,
+                          child: CircularPercentIndicator(
+                            radius: 32.0,
+                            lineWidth: 12.0,
+                            percent: 0.1,
+                            center: Text('5%'),
+                            progressColor: cMainColor,
+                            backgroundColor: Colors.grey.shade300,
+                            circularStrokeCap: CircularStrokeCap.round,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/models/task_model.dart';
-import 'package:kwanga/providers/tasks_provider.dart';
+import 'package:kwanga/providers/tasks/tasks_provider.dart';
 
 final projectTasksProvider =
 Provider.family<List<TaskModel>, String>((ref, projectId) {

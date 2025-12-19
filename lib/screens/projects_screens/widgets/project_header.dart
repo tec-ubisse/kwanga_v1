@@ -28,17 +28,20 @@ class ProjectHeader extends StatelessWidget {
             ),
           ),
         ),
-        CircularPercentIndicator(
-          radius: 36,
-          lineWidth: 10,
-          percent: progress,
-          center: Text(
-            '$percentText%',
-            style: tNormal.copyWith(fontSize: 14),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: CircularPercentIndicator(
+            radius: 36,
+            lineWidth: 10,
+            percent: progress,
+            center: Text(
+              '$percentText%',
+              style: tNormal.copyWith(fontSize: 14),
+            ),
+            progressColor: cMainColor,
+            backgroundColor: Colors.grey.shade200,
+            circularStrokeCap: CircularStrokeCap.round,
           ),
-          progressColor: cMainColor,
-          backgroundColor: Colors.grey.shade200,
-          circularStrokeCap: CircularStrokeCap.round,
         ),
       ],
     );

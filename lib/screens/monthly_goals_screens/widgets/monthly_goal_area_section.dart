@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
+import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/life_area_model.dart';
 import 'package:kwanga/models/monthly_goal_model.dart';
 import 'package:kwanga/models/annual_goal_model.dart';
@@ -46,7 +47,7 @@ class MonthlyGoalAreaSection extends StatelessWidget {
                   ? Image.asset("assets/icons/${area.iconPath}.png", width: 24)
                   : Image.asset(area.iconPath, width: 24),
             const SizedBox(width: 8),
-            Text(area.designation, style: const TextStyle(fontSize: 16)),
+            Text(area.designation, style: tSmallTitle),
           ],
         ),
 
@@ -77,7 +78,6 @@ class MonthlyGoalAreaSection extends StatelessWidget {
     );
   }
 
-  /// Procurar o Annual Goal associado à área atual
   AnnualGoalModel? _findAnnualGoalForArea() {
     for (final annual in allAnnualGoals.where((a) => a.year == selectedYear)) {
       final vision = visions.firstWhere(

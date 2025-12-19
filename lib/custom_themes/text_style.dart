@@ -45,4 +45,15 @@ final inputDecoration = InputDecoration(
     borderSide: BorderSide(color: cSecondaryColor, width: 2.0),
     borderRadius: BorderRadius.circular(12.0),
   ),
+
+  // 🔴 ERRO
+  errorBorder: OutlineInputBorder(
+    borderSide: const BorderSide(color: Colors.red),
+    borderRadius: BorderRadius.circular(12.0),
+  ),
+  focusedErrorBorder: OutlineInputBorder(
+    borderSide: const BorderSide(color: Colors.red, width: 2.0),
+    borderRadius: BorderRadius.circular(12.0),
+  ),
 );
+
