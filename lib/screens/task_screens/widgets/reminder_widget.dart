@@ -2,76 +2,122 @@ import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
 
-class ReminderWidget extends StatefulWidget {
-  const ReminderWidget({super.key});
+class ReminderWidget extends StatelessWidget {
+  final bool enabled;
+  final TimeOfDay time;
 
-  @override
-  State<ReminderWidget> createState() => _ReminderWidgetState();
-}
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<TimeOfDay> onTimeChanged;
 
-class _ReminderWidgetState extends State<ReminderWidget> {
-  int? _selectedIndex;
+  const ReminderWidget({
+    super.key,
+    required this.enabled,
+    required this.time,
+    required this.onToggle,
+    required this.onTimeChanged,
+  });
 
-  final List<_ReminderOption> _options = const [
-    _ReminderOption(label: '07h', icon: Icons.notifications_none),
-    _ReminderOption(label: '12h', icon: Icons.notifications_none),
-    _ReminderOption(label: '15h', icon: Icons.notifications_none),
-    _ReminderOption(label: 'Definir', icon: Icons.schedule),
+  static const List<_ReminderOption> _presetOptions = [
+    _ReminderOption(
+      label: '07h',
+      time: TimeOfDay(hour: 7, minute: 0),
+      icon: Icons.notifications_none,
+    ),
+    _ReminderOption(
+      label: '12h',
+      time: TimeOfDay(hour: 12, minute: 0),
+      icon: Icons.notifications_none,
+    ),
+    _ReminderOption(
+      label: '15h',
+      time: TimeOfDay(hour: 15, minute: 0),
+      icon: Icons.notifications_none,
+    ),
   ];
 
-  Future<void> _openTimePicker() async {
+  String _customLabel() {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  bool _isCustomTime() {
+    return !_presetOptions.any((o) => o.time == time);
+  }
+
+  Future<void> _openTimePicker(BuildContext context) async {
     final pickedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: time,
       builder: (context, child) {
-        // força formato 24h
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            alwaysUse24HourFormat: true,
-          ),
+          data: MediaQuery.of(context)
+              .copyWith(alwaysUse24HourFormat: true),
           child: child!,
         );
       },
     );
 
     if (pickedTime != null) {
-      setState(() {
-        _selectedIndex = 3; // índice do "Definir"
-      });
+      onToggle(true);
+      onTimeChanged(pickedTime);
     }
   }
 
-  void _onSelect(int index) {
-    // Se for "Definir"
-    if (index == 3) {
-      _openTimePicker();
-      return;
+  bool _isSelected(_ReminderOption option) {
+    if (!enabled) return false;
+
+    // Presets
+    if (option.time != null) {
+      return option.time == time;
     }
 
-    setState(() {
-      _selectedIndex = _selectedIndex == index ? null : index;
-    });
+    return _isCustomTime();
   }
+
 
   @override
   Widget build(BuildContext context) {
+    final options = [
+      ..._presetOptions,
+      _ReminderOption(
+        label: enabled && _isCustomTime() ? _customLabel() : 'Definir',
+        icon: Icons.schedule,
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Lembrete', style: tNormal),
+        Text('Lembrete', style: tLabel),
         const SizedBox(height: 8),
-
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: List.generate(_options.length, (index) {
-            final option = _options[index];
-            final isSelected = _selectedIndex == index;
+          children: options.map((option) {
+            final isSelected = _isSelected(option);
 
             return GestureDetector(
-              onTap: () => _onSelect(index),
+              onTap: () {
+                if (option.time == null) {
+                  if (enabled && _isCustomTime()) {
+                    onToggle(false); // 👈 remove lembrete custom
+                  } else {
+                    _openTimePicker(context);
+                  }
+                  return;
+                }
+
+                if (_isSelected(option)) {
+                  onToggle(false); // 👈 remove preset
+                } else {
+                  onToggle(true);
+                  onTimeChanged(option.time!);
+                }
+              },
+
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,
@@ -110,7 +156,7 @@ class _ReminderWidgetState extends State<ReminderWidget> {
                 ),
               ),
             );
-          }),
+          }).toList(),
         ),
       ],
     );
@@ -119,10 +165,12 @@ class _ReminderWidgetState extends State<ReminderWidget> {
 
 class _ReminderOption {
   final String label;
+  final TimeOfDay? time;
   final IconData? icon;
 
   const _ReminderOption({
     required this.label,
+    this.time,
     this.icon,
   });
 }

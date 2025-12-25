@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
-import 'package:kwanga/screens/login_screens/login_screen.dart';
+import 'package:kwanga/screens/login_screens/phone_login.dart';
 import 'package:kwanga/utils/secure_storage.dart';
 import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 import 'package:kwanga/providers/auth_provider.dart';
@@ -50,7 +50,7 @@ class ConfigurationsScreen extends ConsumerWidget {
                             radius: 32.0,
                             backgroundColor: cSecondaryColor,
                             child: Text(
-                              user.email!.substring(0, 2).toUpperCase(),
+                              user.phone.substring(0, 2).toUpperCase(),
                               style: tTitle,
                             ),
                           ),
@@ -58,7 +58,7 @@ class ConfigurationsScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user.email!,
+                                user.phone,
                                 style: tNormal,
                               ),
                             ],
@@ -221,43 +221,50 @@ class ConfigurationsScreen extends ConsumerWidget {
                 ),
 
                 // Log out Button
-                SizedBox(
-                  height: 48,
-                  child: GestureDetector(
-                    onTap: () async {
-                      await SecureStorage.clearAll();
-                      ref.invalidate(authProvider);
+                SafeArea(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 52,
+                        child: GestureDetector(
+                          onTap: () async {
+                            await SecureStorage.clearAll();
+                            ref.invalidate(authProvider);
 
-                      if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                              (route) => false,
-                        );
-                      }
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(color: cBlackColor)
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          spacing: 8.0,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.person_off_outlined, color: cBlackColor),
-                            Text(
-                              'Log out',
-                              style: tNormal.copyWith(
-                                color: cBlackColor,
-                                fontWeight: FontWeight.w600,
+                            if (context.mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const PhoneLogin(isLogin: true)),
+                                    (route) => false,
+                              );
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12.0),
+                              border: Border.all(color: cBlackColor)
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                spacing: 8.0,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.person_off_outlined, color: cBlackColor),
+                                  Text(
+                                    'Log out',
+                                    style: tNormal.copyWith(
+                                      color: cBlackColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16.0,)
+                    ],
                   ),
                 ),
               ],

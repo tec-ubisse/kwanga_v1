@@ -15,6 +15,13 @@ final tNormal = TextStyle(
   fontSize: 15,
 );
 
+final tLabel = TextStyle(
+  color: cMainColor,
+  fontFamily: 'Inter',
+  fontWeight: FontWeight.w700,
+  fontSize: 15,
+);
+
 final tSmallTitle = TextStyle(
   color: cMainColor,
   fontFamily: 'Inter',
@@ -33,6 +40,13 @@ final tButtonText = TextStyle(
   color: cWhiteColor,
   fontFamily: 'Inter',
   fontWeight: FontWeight.w500,
+  fontSize: 18,
+);
+
+final tNumberText = TextStyle(
+  color: Colors.grey,
+  fontFamily: 'Inter',
+  fontWeight: FontWeight.w700,
   fontSize: 18,
 );
 

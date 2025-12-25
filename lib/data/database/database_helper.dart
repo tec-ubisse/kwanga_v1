@@ -14,19 +14,25 @@ class DatabaseHelper {
     return _db!;
   }
 
+  // ----------------------------------------------------------
+  // INIT DATABASE
+  // ----------------------------------------------------------
   Future<Database> _initDatabase() async {
     final dbDir = await getDatabasesPath();
     final path = join(dbDir, 'kwanga_db.db');
 
     return await openDatabase(
       path,
-      version: 18,
+      version: 19, // ⬅️ atualizado
       onCreate: (db, version) async {
         await _createSchema(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 18) {
           await _migrateToV18(db);
+        }
+        if (oldVersion < 19) {
+          await _migrateToV19(db);
         }
       },
     );
@@ -36,17 +42,14 @@ class DatabaseHelper {
   // MIGRATION v18 – purposes com life_area_id
   // ----------------------------------------------------------
   Future<void> _migrateToV18(Database db) async {
-    // verifica se tabela antiga existe
     final tables = await db.rawQuery(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='purposes';",
     );
 
     if (tables.isEmpty) return;
 
-    // 1️⃣ renomeia tabela antiga
     await db.execute('ALTER TABLE purposes RENAME TO purposes_old;');
 
-    // 2️⃣ cria nova tabela correta
     await db.execute('''
       CREATE TABLE purposes (
         id TEXT PRIMARY KEY,
@@ -62,7 +65,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // 3️⃣ obtém uma life_area default (sistema)
     final defaultLifeArea = await db.query(
       'life_areas',
       where: 'is_system = 1',
@@ -72,7 +74,6 @@ class DatabaseHelper {
     final defaultLifeAreaId =
     defaultLifeArea.isNotEmpty ? defaultLifeArea.first['id'] as String : '';
 
-    // 4️⃣ migra dados preservando informação
     final oldPurposes = await db.query('purposes_old');
 
     for (final row in oldPurposes) {
@@ -88,8 +89,57 @@ class DatabaseHelper {
       });
     }
 
-    // 5️⃣ remove tabela antiga
     await db.execute('DROP TABLE purposes_old;');
+  }
+
+  // ----------------------------------------------------------
+  // MIGRATION v19 – users: email/password → phone/OTP
+  // ----------------------------------------------------------
+  Future<void> _migrateToV19(Database db) async {
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='users';",
+    );
+
+    if (tables.isEmpty) return;
+
+    await db.execute('ALTER TABLE users RENAME TO users_old;');
+
+    await db.execute('''
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY,
+        phone TEXT NOT NULL UNIQUE,
+        nome TEXT,
+        apelido TEXT,
+        email TEXT,
+        genero TEXT,
+        data_nascimento INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        is_synced INTEGER NOT NULL DEFAULT 1
+      );
+    ''');
+
+    final oldUsers = await db.query('users_old');
+
+    for (final row in oldUsers) {
+      final fallbackPhone = row['email'];
+
+      if (fallbackPhone == null) continue;
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      await db.insert('users', {
+        'id': row['id'],
+        'phone': fallbackPhone,
+        'created_at': now,
+        'updated_at': now,
+        'is_deleted': 0,
+        'is_synced': 0,
+      });
+    }
+
+    await db.execute('DROP TABLE users_old;');
   }
 
   // ----------------------------------------------------------
@@ -99,9 +149,17 @@ class DatabaseHelper {
     // USERS
     await db.execute('''
       CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        id INTEGER PRIMARY KEY,
+        phone TEXT NOT NULL UNIQUE,
+        nome TEXT,
+        apelido TEXT,
+        email TEXT,
+        genero TEXT,
+        data_nascimento INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        is_synced INTEGER NOT NULL DEFAULT 1
       );
     ''');
 
@@ -118,7 +176,6 @@ class DatabaseHelper {
       );
     ''');
 
-    // predefined life areas
     final predefinedLifeAreas = [
       {'designation': 'Acadêmica', 'icon_path': 'university'},
       {'designation': 'Profissional', 'icon_path': 'professional'},
@@ -142,7 +199,7 @@ class DatabaseHelper {
       });
     }
 
-    // PURPOSES (NOVO MODELO)
+    // PURPOSES
     await db.execute('''
       CREATE TABLE purposes (
         id TEXT PRIMARY KEY,

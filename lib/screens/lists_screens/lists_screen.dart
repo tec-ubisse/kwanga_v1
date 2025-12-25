@@ -7,7 +7,6 @@ import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/providers/lists_provider.dart';
 import 'package:kwanga/screens/lists_screens/widgets/list_tile_item.dart';
 import 'package:kwanga/screens/lists_screens/widgets/lists_filter_bar.dart';
-import 'package:kwanga/screens/task_screens/create_task_screen.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 
@@ -24,7 +23,6 @@ class ListsScreen extends ConsumerWidget {
     final selectedFilter = ref.watch(listFilterProvider);
     final selectedIds = ref.watch(selectedListsProvider);
 
-    // Texto para UI baseado no tipo
     final String toDo = listType == 'entry' ? 'Entrada' : 'Tarefa';
     final String appBarTitle =
     listType == 'action' ? 'Próximas Acções' : 'Entradas';
@@ -37,11 +35,12 @@ class ListsScreen extends ConsumerWidget {
       ),
       backgroundColor: cWhiteColor,
       drawer: const CustomDrawer(),
+
+      // ================= BODY =================
       body: Padding(
         padding: defaultPadding,
         child: Column(
           children: [
-            // Filtro (somente quando listType está vazio)
             if (listType.isEmpty)
               ListsFilterBar(
                 selectedFilter: selectedFilter,
@@ -53,31 +52,26 @@ class ListsScreen extends ConsumerWidget {
               child: listsAsync.when(
                 loading: () =>
                 const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Erro: $err')),
+                error: (err, _) =>
+                    Center(child: Text('Erro: $err')),
                 data: (lists) {
                   List<ListModel> filteredLists;
 
-                  // CASO 1: tela inicial de listas (tem barra de filtros)
                   if (listType.isEmpty) {
                     if (selectedFilter == 1) {
-                      filteredLists = lists
-                          .where((l) => l.listType == 'action')
-                          .toList();
+                      filteredLists =
+                          lists.where((l) => l.listType == 'action').toList();
                     } else if (selectedFilter == 2) {
-                      filteredLists = lists
-                          .where((l) => l.listType == 'entry')
-                          .toList();
+                      filteredLists =
+                          lists.where((l) => l.listType == 'entry').toList();
                     } else {
-                      // ordenar: actions primeiro, depois entries
                       filteredLists = [...lists]
                         ..sort((a, b) {
                           if (a.listType == b.listType) return 0;
                           return a.listType == 'action' ? -1 : 1;
                         });
                     }
-                  }
-                  // CASO 2: rota veio com um tipo definido (action / entry)
-                  else {
+                  } else {
                     filteredLists =
                         lists.where((l) => l.listType == listType).toList();
                   }
@@ -86,7 +80,9 @@ class ListsScreen extends ConsumerWidget {
                     return Center(
                       child: Text(
                         'Nenhuma lista encontrada.',
-                        style: tNormal.copyWith(fontStyle: FontStyle.italic),
+                        style: tNormal.copyWith(
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     );
                   }
@@ -98,23 +94,21 @@ class ListsScreen extends ConsumerWidget {
                       final isSelected = selectedIds.contains(list.id);
 
                       return Padding(
-                        padding: const EdgeInsets.only(top: 12.0),
+                        padding: const EdgeInsets.only(top: 12),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            12.0
-                          ),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
                             color: isSelected
                                 ? cTertiaryColor.withAlpha(30)
                                 : null,
                             child: ListTileItem(
-                              onTap: () {},
-                              onLongPress: () {},
+                              listModel: list,
                               isSelected: isSelected,
                               isEditable: true,
                               canViewChildren: true,
-                              listModel: list,
-                              showProgress: true, // ✅ Mostra o círculo de progresso
+                              showProgress: true,
+                              onTap: () {},
+                              onLongPress: () {},
                             ),
                           ),
                         ),
@@ -127,16 +121,19 @@ class ListsScreen extends ConsumerWidget {
           ],
         ),
       ),
+
+      // ============ BOTTOM BAR ============
       bottomNavigationBar: listsAsync.when(
         loading: () =>
             BottomActionBar(buttonText: 'Adicionar $toDo', onPressed: () {}),
         error: (_, __) =>
             BottomActionBar(buttonText: 'Adicionar $toDo', onPressed: () {}),
         data: (lists) {
-          final filteredLists =
-          lists.where((l) => l.listType == listType).toList();
+          final usableLists = listType.isEmpty
+              ? lists
+              : lists.where((l) => l.listType == listType).toList();
 
-          if (filteredLists.isEmpty) {
+          if (usableLists.isEmpty) {
             return BottomActionBar(
               buttonText: 'Adicionar $toDo',
               onPressed: () {
@@ -151,14 +148,15 @@ class ListsScreen extends ConsumerWidget {
             );
           }
 
-          final defaultList = filteredLists.first;
+          final defaultList = usableLists.first;
 
           return BottomActionBar(
             buttonText: 'Adicionar $toDo',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (ctx) => NewTaskScreen(listModel: defaultList),
+                  builder: (_) =>
+                      NewTaskScreen(listModel: defaultList),
                 ),
               );
             },

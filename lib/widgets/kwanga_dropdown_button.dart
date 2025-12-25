@@ -10,7 +10,14 @@ class KwangaDropdownButton<T> extends StatelessWidget {
   final String labelText;
   final String hintText;
   final String? errorMessage;
+
+  /// Mensagem opcional exibida quando o campo estiver desabilitado
+  /// (mantida por compatibilidade)
   final String? disabledMessage;
+
+  /// Novo: controla explicitamente se o dropdown está desabilitado
+  /// Default false → não quebra chamadas existentes
+  final bool isDisabled;
 
   const KwangaDropdownButton({
     super.key,
@@ -21,9 +28,13 @@ class KwangaDropdownButton<T> extends StatelessWidget {
     required this.hintText,
     this.errorMessage,
     this.disabledMessage,
+    this.isDisabled = false,
   });
 
-  bool get _isDisabled => disabledMessage != null;
+  /// Dropdown fica desabilitado se:
+  /// - isDisabled for true (novo padrão)
+  /// - OU disabledMessage existir (compatibilidade)
+  bool get _isDisabled => isDisabled || disabledMessage != null;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +50,7 @@ class KwangaDropdownButton<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (labelText.isNotEmpty) Text(labelText, style: tNormal),
+        if (labelText.isNotEmpty) Text(labelText, style: tLabel),
         const SizedBox(height: 8),
         Opacity(
           opacity: _isDisabled ? 0.6 : 1,
@@ -57,12 +68,14 @@ class KwangaDropdownButton<T> extends StatelessWidget {
                 dropdownColor: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 style: tNormal,
-                itemHeight: null, // Altura dinâmica
+                itemHeight: null,
                 menuMaxHeight: 400,
                 hint: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
-                    _isDisabled ? disabledMessage! : hintText,
+                    _isDisabled && disabledMessage != null
+                        ? disabledMessage!
+                        : hintText,
                     style: tNormal.copyWith(
                       color: _isDisabled
                           ? Colors.grey
@@ -72,17 +85,19 @@ class KwangaDropdownButton<T> extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Define como o item aparece no botão APÓS selecionado (Sem o Divider)
+
+                /// Define como o item aparece no botão após selecionado
                 selectedItemBuilder: (BuildContext context) {
                   return items.map<Widget>((item) {
                     return Container(
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: item.child, // Aqui enviamos apenas o conteúdo sem a borda
+                      child: item.child,
                     );
                   }).toList();
                 },
-                // Define como os itens aparecem na LISTA aberta (Com o Divider)
+
+                /// Itens com divisor inferior (padrão Kwanga)
                 items: items.asMap().entries.map((entry) {
                   final int index = entry.key;
                   final DropdownMenuItem<T> item = entry.value;

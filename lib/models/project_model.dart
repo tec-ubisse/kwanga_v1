@@ -1,3 +1,4 @@
+import 'dart:convert'; // ESSENCIAL para usar jsonEncode e jsonDecode
 import 'package:uuid/uuid.dart';
 
 class ProjectModel {
@@ -28,7 +29,6 @@ class ProjectModel {
     required this.isSynced,
   }) : id = id ?? const Uuid().v4();
 
-  /// Modelo "vazio" — usado para dropdowns ou estados temporários
   static ProjectModel empty(String monthlyGoalId) {
     return ProjectModel(
       id: "empty-$monthlyGoalId",
@@ -73,6 +73,7 @@ class ProjectModel {
     );
   }
 
+  // --- CORREÇÃO AQUI ---
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -81,14 +82,29 @@ class ProjectModel {
       'title': title,
       'purpose': purpose,
       'expected_result': expectedResult,
-      'brainstorm_ideas': brainstormIdeas,
+      // Convertemos a lista para uma String formatada em JSON
+      'brainstorm_ideas': jsonEncode(brainstormIdeas),
       'first_action': firstAction,
       'is_deleted': isDeleted ? 1 : 0,
       'is_synced': isSynced ? 1 : 0,
     };
   }
 
+  // --- CORREÇÃO AQUI ---
   factory ProjectModel.fromMap(Map<String, dynamic> map) {
+    // Pegamos no valor que vem do banco (String ou null)
+    final brainstormRaw = map['brainstorm_ideas'];
+    List<String> ideas = [];
+
+    if (brainstormRaw != null && brainstormRaw is String && brainstormRaw.isNotEmpty) {
+      try {
+        // Transformamos a String JSON de volta para uma List<String>
+        ideas = List<String>.from(jsonDecode(brainstormRaw));
+      } catch (e) {
+        ideas = []; // Fallback em caso de erro na string
+      }
+    }
+
     return ProjectModel(
       id: map['id'] as String,
       userId: map['user_id'] as int,
@@ -96,10 +112,7 @@ class ProjectModel {
       title: map['title'] as String? ?? "",
       purpose: map['purpose'] as String? ?? "",
       expectedResult: map['expected_result'] as String? ?? "",
-      brainstormIdeas: (map['brainstorm_ideas'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-          [],
+      brainstormIdeas: ideas,
       firstAction: map['first_action'] as String?,
       isDeleted: (map['is_deleted'] ?? 0) == 1,
       isSynced: (map['is_synced'] ?? 0) == 1,

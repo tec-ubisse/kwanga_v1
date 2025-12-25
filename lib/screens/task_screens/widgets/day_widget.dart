@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -10,62 +11,99 @@ enum DueDateOption {
 }
 
 class DayWidget extends StatefulWidget {
-  const DayWidget({super.key});
+  final DateTime? value;
+  final ValueChanged<DateTime?> onChanged;
+
+  const DayWidget({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   State<DayWidget> createState() => _DayWidgetState();
 }
 
 class _DayWidgetState extends State<DayWidget> {
-  DueDateOption? _selectedOption;
+
+  String _customLabel() {
+    if (widget.value == null) return 'Escolher';
+    return DateFormat('dd/MM').format(widget.value!);
+  }
+
+
+  DueDateOption? get _selectedOption {
+    if (widget.value == null) return null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    final selected = DateTime(
+      widget.value!.year,
+      widget.value!.month,
+      widget.value!.day,
+    );
+
+    if (selected == today) return DueDateOption.today;
+    if (selected == tomorrow) return DueDateOption.tomorrow;
+
+    return DueDateOption.custom;
+  }
 
   Future<void> _openDatePicker() async {
     final pickedDate = await showDatePicker(
       locale: const Locale('pt'),
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: widget.value ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: cMainColor,
               onPrimary: Colors.white,
               onSurface: cBlackColor,
             ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: cMainColor, // OK / Cancelar
-              ),
-            ),
-
           ),
           child: child!,
         );
-      }
+      },
     );
 
     if (pickedDate != null) {
-      setState(() {
-        _selectedOption = DueDateOption.custom;
-      });
+      widget.onChanged(pickedDate);
     }
   }
 
   void _onSelect(DueDateOption option) {
-    if (option == DueDateOption.custom) {
-      _openDatePicker();
-      return;
-    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    setState(() {
-      if (_selectedOption == option) {
-        _selectedOption = null;
-      } else {
-        _selectedOption = option;
-      }
-    });
+    switch (option) {
+      case DueDateOption.today:
+        widget.onChanged(
+          _selectedOption == DueDateOption.today ? null : today,
+        );
+        break;
+
+      case DueDateOption.tomorrow:
+        widget.onChanged(
+          _selectedOption == DueDateOption.tomorrow
+              ? null
+              : today.add(const Duration(days: 1)),
+        );
+        break;
+
+      case DueDateOption.custom:
+        if (_selectedOption == DueDateOption.custom) {
+          widget.onChanged(null); // 👈 remove a data
+        } else {
+          _openDatePicker();
+        }
+        break;
+    }
   }
 
   @override
@@ -73,25 +111,18 @@ class _DayWidgetState extends State<DayWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Data de conclusão', style: tNormal),
+        Text('Data de conclusão', style: tLabel),
         const SizedBox(height: 8),
-
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
+            _buildChip('Hoje', DueDateOption.today),
+            _buildChip('Amanhã', DueDateOption.tomorrow),
             _buildChip(
-              label: 'Hoje',
-              option: DueDateOption.today,
-            ),
-            _buildChip(
-              label: 'Amanhã',
-              option: DueDateOption.tomorrow,
-            ),
-            _buildChip(
-              label: 'Escolher',
+              _customLabel(),
+              DueDateOption.custom,
               icon: Icons.calendar_today_outlined,
-              option: DueDateOption.custom,
             ),
           ],
         ),
@@ -99,17 +130,17 @@ class _DayWidgetState extends State<DayWidget> {
     );
   }
 
-  Widget _buildChip({
-    required String label,
-    required DueDateOption option,
-    IconData? icon,
-  }) {
-    final bool isSelected = _selectedOption == option;
+  Widget _buildChip(
+      String label,
+      DueDateOption option, {
+        IconData? icon,
+      }) {
+    final isSelected = _selectedOption == option;
 
     return GestureDetector(
       onTap: () => _onSelect(option),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? cMainColor : Colors.transparent,
@@ -141,3 +172,4 @@ class _DayWidgetState extends State<DayWidget> {
     );
   }
 }
+

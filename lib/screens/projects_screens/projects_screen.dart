@@ -128,8 +128,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     final auth = ref.watch(authProvider).value;
 
     return Scaffold(
-      // backgroundColor: const Color(0xffF4F1EB),
-      backgroundColor: cWhiteColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("Projectos", style: tTitle),
         backgroundColor: cMainColor,

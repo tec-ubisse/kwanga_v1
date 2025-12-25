@@ -3,6 +3,7 @@ import 'package:kwanga/screens/annual_goals_screens/annual_goals.dart';
 import 'package:kwanga/screens/configurations_screen/version_screen.dart';
 import 'package:kwanga/screens/life_area_screens/life_areas_screen.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
+import 'package:kwanga/screens/login_screens/phone_login.dart';
 import 'package:kwanga/screens/long_term_vision_screens/visions_screen.dart';
 import 'package:kwanga/screens/monthly_goals_screens/monthly_goals_screen.dart';
 import 'package:kwanga/screens/projects_screens/projects_screen.dart';

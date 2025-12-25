@@ -107,6 +107,7 @@ class _CreateProjectScreenState extends ConsumerState<CreateProjectScreen> {
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
       ),
+      backgroundColor: Colors.white,
 
       bottomNavigationBar: BottomActionBar(
         buttonText: isEditing ? "Actualizar" : "Salvar",

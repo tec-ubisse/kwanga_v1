@@ -22,10 +22,11 @@ import 'widgets/task_switch_row.dart';
 import 'package:kwanga/widgets/buttons/main_button.dart';
 
 class NewTaskScreen extends ConsumerStatefulWidget {
-  const NewTaskScreen({super.key, required this.listModel, this.taskModel});
+  const NewTaskScreen({super.key, required this.listModel, this.taskModel, this.fixList});
 
   final ListModel listModel;
   final TaskModel? taskModel;
+  final bool? fixList;
 
   @override
   ConsumerState<NewTaskScreen> createState() => _CreateTaskScreenState();
@@ -35,6 +36,8 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _descriptionController;
 
+  bool get canSelect => widget.fixList != null;
+
   bool get isEditing => widget.taskModel != null;
 
   late bool isAction; // listType = action
@@ -42,10 +45,10 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
   DateTime? _selectedDate;
 
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
-  String _selectedFrequency = 'Todos os dias';
 
   bool _reminderEnabled = false;
   bool _frequencyEnabled = false;
+  Set<int> _selectedFrequencyDays = {};
 
   String? _listTypeError;
   bool _isLoading = false;
@@ -67,18 +70,35 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
     if (isEditing) {
       final t = widget.taskModel!;
 
+      // Deadline
       _selectedDate = t.deadline;
 
+      // Reminder
       if (t.time != null) {
         _reminderEnabled = true;
-        _selectedTime = TimeOfDay(hour: t.time!.hour, minute: t.time!.minute);
+        _selectedTime = TimeOfDay(
+          hour: t.time!.hour,
+          minute: t.time!.minute,
+        );
+      } else {
+        _reminderEnabled = false;
       }
 
+      // Frequency
       if (t.frequency != null && t.frequency!.isNotEmpty) {
         _frequencyEnabled = true;
-        _selectedFrequency = t.frequency!.first;
+        _selectedFrequencyDays =
+            t.frequency!
+                .map((e) => int.tryParse(e))
+                .where((e) => e != null && e >= 0 && e < 7)
+                .cast<int>()
+                .toSet();
+      } else {
+        _frequencyEnabled = false;
+        _selectedFrequencyDays = {}; // 👈 ISTO FECHA O BUG
       }
     }
+
   }
 
   @override
@@ -130,7 +150,9 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
           time: _reminderEnabled
               ? DateTime(0, 1, 1, _selectedTime.hour, _selectedTime.minute)
               : null,
-          frequency: _frequencyEnabled ? [_selectedFrequency] : null,
+          frequency: _selectedFrequencyDays.isNotEmpty
+              ? _selectedFrequencyDays.map((d) => d.toString()).toList()
+              : null,
         );
 
         await tasksNotifier.updateTask(updatedTask);
@@ -152,7 +174,9 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
         time: _reminderEnabled
             ? DateTime(0, 1, 1, _selectedTime.hour, _selectedTime.minute)
             : null,
-        frequency: _frequencyEnabled ? [_selectedFrequency] : null,
+        frequency: _selectedFrequencyDays.isNotEmpty
+            ? _selectedFrequencyDays.map((d) => d.toString()).toList()
+            : null,
         completed: 0,
       );
 
@@ -221,8 +245,9 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
                         spacing: 8.0,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Escolha uma lista", style: tNormal),
+                          Text("Escolha uma lista", style: tLabel),
                           KwangaDropdownButton<String>(
+                            isDisabled: canSelect,
                             value: _selectedListId,
                             errorMessage: _listTypeError,
                             items: filtered.map((l) {
@@ -241,7 +266,7 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
 
 
                           const SizedBox(height: 16),
-                          Text("Descrição", style: tNormal),
+                          Text("Descrição", style: tLabel),
                           TextFormField(
                             controller: _descriptionController,
                             decoration: inputDecoration.copyWith(
@@ -255,11 +280,31 @@ class _CreateTaskScreenState extends ConsumerState<NewTaskScreen> {
 
                           if (isAction) ...[
                             const SizedBox(height: 16),
-                            DayWidget(),
+                            DayWidget(
+                              value: _selectedDate,
+                              onChanged: (date) {
+                                setState(() => _selectedDate = date);
+                              },
+                            ),
                             const SizedBox(height: 16),
-                            ReminderWidget(),
+                            ReminderWidget(
+                              enabled: _reminderEnabled,
+                              time: _selectedTime,
+                              onToggle: (v) {
+                                setState(() => _reminderEnabled = v);
+                              },
+                              onTimeChanged: (time) {
+                                setState(() => _selectedTime = time);
+                              },
+                            ),
                             const SizedBox(height: 16),
-                            FrequencyWidget(),
+                            FrequencyWidget(
+                              value: _selectedFrequencyDays,
+                              onChanged: (days) {
+                                setState(() => _selectedFrequencyDays = days);
+                              },
+                            ),
+
                           ],
                         ],
                       ),

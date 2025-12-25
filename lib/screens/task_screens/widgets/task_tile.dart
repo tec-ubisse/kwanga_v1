@@ -13,7 +13,7 @@ class TaskTile extends StatelessWidget {
   final void Function(TaskModel) onDelete;
   final void Function(TaskModel) onUpdate;
   final void Function(TaskModel, int) onToggleFinal;
-  final void Function(TaskModel)? onMove; // 👈 NOVO
+  final void Function(TaskModel)? onMove;
 
   final VoidCallback? onLongPress;
 
@@ -32,7 +32,6 @@ class TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompleted = task.completed == 1;
     final isAction = task.listType == 'action';
-    final createdDate = DateFormat('dd/MM/yyyy').format(task.createdAt);
 
     return CardContainer(
       padding: const EdgeInsets.only(left: 16.0),
@@ -40,7 +39,6 @@ class TaskTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.0),
         child: Slidable(
           key: ValueKey(task.id),
-
           endActionPane: ActionPane(
             extentRatio: 0.64,
             motion: const StretchMotion(),
@@ -56,7 +54,6 @@ class TaskTile extends StatelessWidget {
                     onMove!(task);
                   },
                 ),
-
               SlidableAction(
                 backgroundColor: cSecondaryColor,
                 onPressed: (_) {
@@ -79,7 +76,8 @@ class TaskTile extends StatelessWidget {
             ],
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            contentPadding:
+            const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             onLongPress: onLongPress,
             title: Text(
               task.description,
@@ -87,14 +85,7 @@ class TaskTile extends StatelessWidget {
                 decoration: isCompleted ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: Row(
-              children: [
-                const Icon(Icons.calendar_month,
-                    color: Colors.grey, size: 12),
-                const SizedBox(width: 4),
-                Text(createdDate, style: tSmall.copyWith(color: Colors.grey)),
-              ],
-            ),
+            subtitle: _TaskMetaRow(task: task),
             trailing: isSelected
                 ? const Padding(
               padding: EdgeInsets.only(right: 8.0),
@@ -122,3 +113,92 @@ class TaskTile extends StatelessWidget {
   }
 }
 
+class _TaskMetaRow extends StatelessWidget {
+  final TaskModel task;
+
+  const _TaskMetaRow({required this.task});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <Widget>[];
+
+    items.add(
+      _MetaItem(
+        icon: Icons.calendar_month,
+        text: DateFormat('dd/MM/yyyy').format(task.createdAt),
+      ),
+    );
+
+    if (task.deadline != null) {
+      items.add(
+        _MetaItem(
+          icon: Icons.calendar_today_rounded,
+          text: DateFormat('dd/MM').format(task.deadline!),
+        ),
+      );
+    }
+
+    if (task.time != null) {
+      items.add(
+        _MetaItem(
+          icon: Icons.alarm,
+          text: DateFormat('HH:mm').format(task.time!),
+        ),
+      );
+    }
+
+    if (task.frequency != null && task.frequency!.isNotEmpty) {
+      items.add(
+        _MetaItem(
+          icon: Icons.repeat,
+          text: _formatFrequency(task.frequency!),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 4,
+        children: items,
+      ),
+    );
+  }
+
+  String _formatFrequency(List<String> days) {
+    const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+    return days
+        .map((d) => int.tryParse(d))
+        .where((d) => d != null && d! >= 0 && d < 7)
+        .map((d) => labels[d!])
+        .join(' • ');
+  }
+}
+
+
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MetaItem({
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: tSmall.copyWith(color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+}

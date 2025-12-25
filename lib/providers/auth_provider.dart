@@ -1,96 +1,105 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/data/repositories/auth_repository.dart';
 import 'package:kwanga/models/user.dart';
 import 'package:kwanga/utils/secure_storage.dart';
 
-final authProvider = AsyncNotifierProvider<AuthNotifier, UserModel?>(
+final authProvider =
+AsyncNotifierProvider<AuthNotifier, UserModel?>(
   AuthNotifier.new,
 );
 
 class AuthNotifier extends AsyncNotifier<UserModel?> {
   @override
   Future<UserModel?> build() async {
-    try {
-      final token = await SecureStorage.getToken();
-      final userId = await SecureStorage.getUserId();
-      final userEmail = await SecureStorage.getUserEmail();
+    final token = await SecureStorage.getToken();
+    final phone = await SecureStorage.getUserPhone();
+    final userId = await SecureStorage.getUserId();
 
-      if (token != null && userId != null && userEmail != null) {
-        return UserModel(id: userId, email: userEmail);
-      }
+    if (token == null || phone == null) return null;
 
-      return null;
-    } catch (e) {
-      return null;
-    }
+    return UserModel(
+      id: userId,
+      phone: phone,
+      token: token,
+    );
   }
 
-  Future<void> login(String email, String password) async {
-    final authRepository = ref.read(authRepositoryProvider);
+  // ============================================================
+  // 🔐 LOGIN OTP
+  // ============================================================
+
+  Future<void> verifyOTP(
+      String phone,
+      String code,
+      ) async {
     state = const AsyncValue.loading();
 
     try {
-      final authData = await authRepository.login(email, password);
+      final repo = ref.read(authRepositoryProvider);
+      final authData = await repo.loginVerifyOTP(phone, code);
 
-      final user = authData['user'];
-      final token = authData['token'];
+      final user = UserModel.fromMap({
+        ...authData['user'],
+        'token': authData['token'],
+      });
 
-      await SecureStorage.saveAuthData(token, user['id'], user['email']);
+      await SecureStorage.saveAuthData(
+        user.token!,
+        user.id!,
+        user.phone,
+      );
 
-      state = AsyncValue.data(UserModel.fromMap({...user, 'token': token}));
+      state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  Future<void> register(String email, String password) async {
-    final authRepository = ref.read(authRepositoryProvider);
+  // ============================================================
+  // 👤 PERFIL
+  // ============================================================
+
+  Future<void> updateUserProfile({
+    required String nome,
+    required String apelido,
+    required String email,
+    required String genero,
+    required DateTime dataNascimento,
+  }) async {
+    final currentUser = state.value;
+    if (currentUser == null) return;
+
     state = const AsyncValue.loading();
 
     try {
-      await authRepository.register(email, password);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
+      final repo = ref.read(authRepositoryProvider);
+      final data = await repo.updateProfile(
+        nome: nome,
+        apelido: apelido,
+        email: email,
+        genero: genero,
+        dataNascimento: dataNascimento,
+      );
 
-  Future<void> verifyEmail(String email, String code) async {
-    final authRepository = ref.read(authRepositoryProvider);
-    state = const AsyncValue.loading();
+      final updatedUser = currentUser.copyWith(
+        nome: data['first_name'],
+        apelido: data['last_name'],
+        email: data['email'],
+        genero: data['gender'],
+        dataNascimento: data['date_of_birth'] != null
+            ? DateTime.parse(data['date_of_birth'])
+            : null,
+        updatedAt: DateTime.now(),
+        isSynced: true,
+      );
 
-    try {
-      final authData = await authRepository.verifyEmail(email, code);
-      final user = authData['user'];
-      final token = authData['token'];
-
-      await SecureStorage.saveAuthData(token, user['id'], user['email']);
-
-      state = AsyncValue.data(UserModel.fromMap({...user, 'token': token}));
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  /// ✅ Corrigido aqui — usa o authRepositoryProvider
-  Future<void> resendVerificationCode(String email) async {
-    final authRepository = ref.read(authRepositoryProvider);
-    state = const AsyncValue.loading();
-
-    try {
-      await authRepository.resendVerificationCode(email);
-      state = AsyncValue.data(state.value); // mantém o estado anterior
+      state = AsyncValue.data(updatedUser);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   Future<void> logout() async {
-    try {
-      await ref.read(authRepositoryProvider).logout();
-    } catch (_) {}
-
     await SecureStorage.clearAll();
     state = const AsyncValue.data(null);
   }

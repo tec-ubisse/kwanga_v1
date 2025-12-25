@@ -135,7 +135,7 @@ class _CreateAnnualGoalScreenState
         backgroundColor: cMainColor,
         foregroundColor: cWhiteColor,
       ),
-
+      backgroundColor: Colors.white,
       bottomNavigationBar: BottomActionBar(
         buttonText:
         isEditing ? "Actualizar" : "Criar objectivo anual",

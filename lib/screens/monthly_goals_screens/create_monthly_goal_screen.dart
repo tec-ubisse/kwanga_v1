@@ -107,7 +107,7 @@ class _CreateMonthlyGoalScreenState
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text("Objectivo Anual ($currentYear)", style: tNormalBold),
+                Text("Objectivo Anual ($currentYear)", style: tLabel),
                 const SizedBox(height: 8),
 
                 KwangaDropdownButton<AnnualGoalModel>(
@@ -130,7 +130,7 @@ class _CreateMonthlyGoalScreenState
                 ),
 
                 const SizedBox(height: 24),
-                Text("Mês", style: tNormalBold),
+                Text("Mês", style: tLabel),
                 const SizedBox(height: 8),
 
                 KwangaDropdownButton<int>(
@@ -152,7 +152,7 @@ class _CreateMonthlyGoalScreenState
                 ),
 
                 const SizedBox(height: 24),
-                Text("Objectivo", style: tNormalBold),
+                Text("Objectivo", style: tLabel),
                 const SizedBox(height: 8),
 
                 TextFormField(

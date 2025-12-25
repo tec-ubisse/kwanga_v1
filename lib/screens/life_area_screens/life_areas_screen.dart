@@ -45,34 +45,30 @@ class LifeAreasScreen extends ConsumerWidget {
 
             return Padding(
               padding: defaultPadding,
-              child: RefreshIndicator(
-                onRefresh: () async =>
-                    ref.invalidate(lifeAreasProvider),
-                child: GridView.builder(
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: lifeAreas.length,
-                  itemBuilder: (_, index) {
-                    final area = lifeAreas[index];
-
-                    return LifeAreaCard(
-                      area: area,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LifeAreaDetailsScreen(areaId: area.id),
-                          ),
-                        );
-                      },
-                    );
-
-                  },
+              child: GridView.builder(
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
                 ),
+                itemCount: lifeAreas.length,
+                itemBuilder: (_, index) {
+                  final area = lifeAreas[index];
+
+                  return LifeAreaCard(
+                    area: area,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LifeAreaDetailsScreen(areaId: area.id),
+                        ),
+                      );
+                    },
+                  );
+
+                },
               ),
             );
           },

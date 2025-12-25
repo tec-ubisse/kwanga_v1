@@ -2,41 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
 
-class FrequencyWidget extends StatefulWidget {
-  final Set<int>? initialSelectedDays;
-  final ValueChanged<Set<int>>? onChanged;
+class FrequencyWidget extends StatelessWidget {
+  final Set<int> value;
+  final ValueChanged<Set<int>> onChanged;
 
   const FrequencyWidget({
     super.key,
-    this.initialSelectedDays,
-    this.onChanged,
+    required this.value,
+    required this.onChanged,
   });
 
-  @override
-  State<FrequencyWidget> createState() => _FrequencyWidgetState();
-}
-
-class _FrequencyWidgetState extends State<FrequencyWidget> {
-  final List<String> _days = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
-
-  late Set<int> _selectedDays;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDays = {...?widget.initialSelectedDays};
-  }
+  static const List<String> _days = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
   void _toggleDay(int index) {
-    setState(() {
-      if (_selectedDays.contains(index)) {
-        _selectedDays.remove(index);
-      } else {
-        _selectedDays.add(index);
-      }
-    });
+    final updated = {...value};
 
-    widget.onChanged?.call(_selectedDays);
+    if (updated.contains(index)) {
+      updated.remove(index);
+    } else {
+      updated.add(index);
+    }
+
+    onChanged(updated);
   }
 
   @override
@@ -44,7 +31,7 @@ class _FrequencyWidgetState extends State<FrequencyWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Todas as...', style: tNormal),
+        Text('Repetir em...', style: tLabel),
         const SizedBox(height: 8),
 
         Container(
@@ -56,17 +43,18 @@ class _FrequencyWidgetState extends State<FrequencyWidget> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_days.length, (index) {
-              final isSelected = _selectedDays.contains(index);
+              final isSelected = value.contains(index);
 
               return GestureDetector(
                 onTap: () => _toggleDay(index),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 250),
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSelected ? cMainColor : Colors.transparent,
+                    color:
+                    isSelected ? cMainColor : Colors.transparent,
                     border: Border.all(
                       color: isSelected
                           ? cMainColor

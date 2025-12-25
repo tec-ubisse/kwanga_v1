@@ -6,7 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/screens/lists_screens/lists_screen.dart';
-import 'package:kwanga/screens/login_screens/login_screen.dart';
+import 'package:kwanga/screens/login_screens/phone_login.dart';
 import 'package:kwanga/services/connection_wrapper.dart';
 
 /// Apenas para migrações iniciais controladas
@@ -65,7 +65,7 @@ class MyApp extends ConsumerWidget {
           }
 
           // Sem login → vai para ecrã de autenticação
-          return const LoginScreen();
+          return const PhoneLogin(isLogin: true);
         },
       ),
     );
