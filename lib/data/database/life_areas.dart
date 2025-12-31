@@ -65,4 +65,12 @@ final List<LifeAreaModel> initialLifeAreas = [
     isDeleted: false,
     isSynced: true,
   ),
+  LifeAreaModel(
+    userId: 0,
+    designation: 'Social',
+    iconPath: 'social',
+    isSystem: true,
+    isDeleted: false,
+    isSynced: true,
+  ),
 ];

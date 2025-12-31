@@ -5,7 +5,6 @@ import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/providers/auth_provider.dart';
 import 'package:kwanga/providers/lists_provider.dart';
 import 'package:kwanga/providers/tasks/tasks_provider.dart';
-import 'package:kwanga/screens/task_screens/create_task_screen.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_list_view.dart';
 import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 

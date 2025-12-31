@@ -6,18 +6,22 @@ import '../../../../utils/life_area_icon_resolver.dart';
 
 class LifeAreaCard extends StatelessWidget {
   final LifeAreaModel area;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+
+  /// 👇 quando true, mostra handle de drag e desativa tap
+  final bool showDragHandle;
 
   const LifeAreaCard({
     super.key,
     required this.area,
-    required this.onTap,
+    this.onTap,
+    this.showDragHandle = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: showDragHandle ? null : onTap,
       child: Container(
         decoration: BoxDecoration(
           color: cBlackColor.withAlpha(10),
@@ -50,6 +54,18 @@ class LifeAreaCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            // Drag handle (modo reorder)
+            if (showDragHandle)
+              const Positioned(
+                top: 6,
+                right: 6,
+                child: Icon(
+                  Icons.drag_handle,
+                  size: 18,
+                  color: cMainColor,
+                ),
+              ),
           ],
         ),
       ),

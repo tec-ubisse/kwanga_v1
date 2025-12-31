@@ -9,11 +9,15 @@ import 'package:kwanga/screens/lists_screens/lists_screen.dart';
 import 'package:kwanga/screens/login_screens/phone_login.dart';
 import 'package:kwanga/services/connection_wrapper.dart';
 
+import 'package:kwanga/custom_themes/app_colors.dart';
+
 /// Apenas para migrações iniciais controladas
 import 'data/database/lists_dao.dart';
+import 'data/services/reminder_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ReminderService.init();
 
   try {
     await dotenv.load(fileName: ".env");
@@ -35,7 +39,22 @@ class MyApp extends ConsumerWidget {
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
 
-      // 🔹 LOCALIZAÇÃO (OBRIGATÓRIA PARA DATE/TIME PICKERS)
+      // =====================
+      // THEME (segue o sistema)
+      // =====================
+      theme: ThemeData(
+        colorScheme: AppColors.lightScheme,
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: AppColors.darkScheme,
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
+
+      // =====================
+      // LOCALIZAÇÃO
+      // =====================
       locale: const Locale('pt'),
       supportedLocales: const [
         Locale('pt'),
@@ -51,20 +70,16 @@ class MyApp extends ConsumerWidget {
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-
         error: (error, stack) => const Scaffold(
           body: Center(child: Text("Ocorreu um erro ao iniciar.")),
         ),
-
         data: (user) {
           if (user != null) {
-            // Utilizador autenticado → entra direto na lista "entry"
             return const ConnectionWrapper(
               child: ListsScreen(listType: 'entry'),
             );
           }
 
-          // Sem login → vai para ecrã de autenticação
           return const PhoneLogin(isLogin: true);
         },
       ),

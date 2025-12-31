@@ -33,43 +33,53 @@ class AnnualGoalsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        HeaderSection(vision: vision, area: area),
-
-        // TITLE
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24.0, 12.0, 0, 12),
-          child: Text("Objectivos Anuais",
-              style: tSmallTitle.copyWith(fontSize: 18)),
+        /// HEADER FIXO
+        HeaderSection(
+          vision: vision,
+          area: area,
         ),
 
-        // BODY
+        /// CONTEÚDO SCROLLÁVEL
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                for (final year in years) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(
-                      year.toString(),
-                      style: tSmallTitle.copyWith(
-                        fontSize: 18,
-                        color: Colors.grey[800],
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              /// TÍTULO
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+                child: Text(
+                  'Objectivos Anuais',
+                  style: tSmallTitle.copyWith(fontSize: 18),
+                ),
+              ),
+
+              /// ANOS + OBJECTIVOS
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final year in years) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          year.toString(),
+                          style: tSmallTitle.copyWith(
+                            fontSize: 18,
+                            color: Colors.grey[800],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-
-                  GoalsForYear(
-                    goals: filteredGoals,
-                    year: year,
-                  ),
-
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
+                      GoalsForYear(
+                        goals: filteredGoals,
+                        year: year,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],

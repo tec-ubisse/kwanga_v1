@@ -9,12 +9,14 @@ class GoalAreaSection extends StatelessWidget {
   final LifeAreaModel area;
   final List<AnnualGoalModel> goals;
   final int year;
+  final void Function(AnnualGoalModel goal) onGoalTap;
 
   const GoalAreaSection({
     super.key,
     required this.area,
     required this.goals,
     required this.year,
+    required this.onGoalTap,
   });
 
   @override
@@ -47,7 +49,8 @@ class GoalAreaSection extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: GoalWidget(
                                     goal: g,
-                                    isCompleted: false, lifeArea: area, progress: 25, // ajustar futuramente
+                                    isCompleted: false, lifeArea: area, progress: 25,
+                      onTap: () => onGoalTap(g),
                                   ),
                   ))
                   .toList(),

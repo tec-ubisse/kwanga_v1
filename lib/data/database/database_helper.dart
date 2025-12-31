@@ -23,130 +23,65 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 19, // ⬅️ atualizado
+      version: 2,
+      onConfigure: (db) async {
+        // 🔒 Obrigatório para FKs no SQLite
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: (db, version) async {
         await _createSchema(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 18) {
-          await _migrateToV18(db);
-        }
-        if (oldVersion < 19) {
-          await _migrateToV19(db);
-        }
+        await _runMigrations(db, oldVersion, newVersion);
       },
     );
   }
 
   // ----------------------------------------------------------
-  // MIGRATION v18 – purposes com life_area_id
+  // MIGRATIONS
   // ----------------------------------------------------------
-  Future<void> _migrateToV18(Database db) async {
-    final tables = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='purposes';",
-    );
-
-    if (tables.isEmpty) return;
-
-    await db.execute('ALTER TABLE purposes RENAME TO purposes_old;');
-
-    await db.execute('''
-      CREATE TABLE purposes (
-        id TEXT PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        life_area_id TEXT NOT NULL,
-        description TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0,
-        is_synced INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY(life_area_id) REFERENCES life_areas(id) ON DELETE CASCADE
-      );
-    ''');
-
-    final defaultLifeArea = await db.query(
-      'life_areas',
-      where: 'is_system = 1',
-      limit: 1,
-    );
-
-    final defaultLifeAreaId =
-    defaultLifeArea.isNotEmpty ? defaultLifeArea.first['id'] as String : '';
-
-    final oldPurposes = await db.query('purposes_old');
-
-    for (final row in oldPurposes) {
-      await db.insert('purposes', {
-        'id': row['id'] ?? const Uuid().v4(),
-        'user_id': row['user_id'],
-        'life_area_id': defaultLifeAreaId,
-        'description': row['description'],
-        'created_at': row['created_at'],
-        'updated_at': row['updated_at'],
-        'is_deleted': row['is_deleted'] ?? 0,
-        'is_synced': row['is_synced'] ?? 0,
-      });
+  Future<void> _runMigrations(
+      Database db,
+      int oldVersion,
+      int newVersion,
+      ) async {
+    if (oldVersion < 2) {
+      await _migrationV2_AddSocialLifeArea(db);
     }
-
-    await db.execute('DROP TABLE purposes_old;');
   }
 
   // ----------------------------------------------------------
-  // MIGRATION v19 – users: email/password → phone/OTP
+  // MIGRATION v2 — Add "Social" system life area
   // ----------------------------------------------------------
-  Future<void> _migrateToV19(Database db) async {
-    final tables = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='users';",
-    );
+  Future<void> _migrationV2_AddSocialLifeArea(Database db) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
 
-    if (tables.isEmpty) return;
-
-    await db.execute('ALTER TABLE users RENAME TO users_old;');
-
-    await db.execute('''
-      CREATE TABLE users (
-        id INTEGER PRIMARY KEY,
-        phone TEXT NOT NULL UNIQUE,
-        nome TEXT,
-        apelido TEXT,
-        email TEXT,
-        genero TEXT,
-        data_nascimento INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        is_deleted INTEGER NOT NULL DEFAULT 0,
-        is_synced INTEGER NOT NULL DEFAULT 1
-      );
-    ''');
-
-    final oldUsers = await db.query('users_old');
-
-    for (final row in oldUsers) {
-      final fallbackPhone = row['email'];
-
-      if (fallbackPhone == null) continue;
-
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      await db.insert('users', {
-        'id': row['id'],
-        'phone': fallbackPhone,
+    await db.insert(
+      'life_areas',
+      {
+        'id': const Uuid().v4(),
+        'user_id': null,
+        'designation': 'Social',
+        'icon_path': 'social',
+        'is_system': 1,
+        'is_deleted': 0,
+        'is_synced': 1,
+        'order_index': 8,
         'created_at': now,
         'updated_at': now,
-        'is_deleted': 0,
-        'is_synced': 0,
-      });
-    }
-
-    await db.execute('DROP TABLE users_old;');
+      },
+      // 🔁 se já existir, ignora (idempotente)
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
   }
 
   // ----------------------------------------------------------
-  // SCHEMA – fresh install
+  // SCHEMA — fresh install
   // ----------------------------------------------------------
   Future<void> _createSchema(Database db) async {
+    // ==========================================================
     // USERS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY,
@@ -163,19 +98,38 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // LIFE AREAS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE life_areas (
         id TEXT PRIMARY KEY,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER,
         designation TEXT NOT NULL,
         icon_path TEXT NOT NULL,
         is_system INTEGER NOT NULL DEFAULT 0,
         is_deleted INTEGER NOT NULL DEFAULT 0,
-        is_synced INTEGER NOT NULL DEFAULT 0
+        is_synced INTEGER NOT NULL DEFAULT 0,
+        order_index INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CHECK (
+          (is_system = 1 AND user_id IS NULL)
+          OR
+          (is_system = 0 AND user_id IS NOT NULL)
+        )
       );
     ''');
 
+    await db.execute('''
+      CREATE INDEX idx_life_areas_order
+      ON life_areas (order_index, user_id);
+    ''');
+
+    // ----------------------------------------------------------
+    // Seed das áreas do sistema (fresh install)
+    // ----------------------------------------------------------
     final predefinedLifeAreas = [
       {'designation': 'Acadêmica', 'icon_path': 'university'},
       {'designation': 'Profissional', 'icon_path': 'professional'},
@@ -185,21 +139,34 @@ class DatabaseHelper {
       {'designation': 'Saúde', 'icon_path': 'health'},
       {'designation': 'Família', 'icon_path': 'family'},
       {'designation': 'Financeira', 'icon_path': 'finances'},
+      {'designation': 'Social', 'icon_path': 'social'},
     ];
 
-    for (final area in predefinedLifeAreas) {
-      await db.insert('life_areas', {
-        'id': const Uuid().v4(),
-        'user_id': 0,
-        'designation': area['designation'],
-        'icon_path': area['icon_path'],
-        'is_system': 1,
-        'is_deleted': 0,
-        'is_synced': 1,
-      });
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    for (int i = 0; i < predefinedLifeAreas.length; i++) {
+      final area = predefinedLifeAreas[i];
+
+      await db.insert(
+        'life_areas',
+        {
+          'id': const Uuid().v4(),
+          'user_id': null,
+          'designation': area['designation'],
+          'icon_path': area['icon_path'],
+          'is_system': 1,
+          'is_deleted': 0,
+          'is_synced': 1,
+          'order_index': i,
+          'created_at': now,
+          'updated_at': now,
+        },
+      );
     }
 
+    // ==========================================================
     // PURPOSES
+    // ==========================================================
     await db.execute('''
       CREATE TABLE purposes (
         id TEXT PRIMARY KEY,
@@ -215,7 +182,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // VISIONS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE visions (
         id TEXT PRIMARY KEY,
@@ -230,7 +199,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // LISTS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE lists (
         id TEXT PRIMARY KEY,
@@ -244,7 +215,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // TASKS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE tasks (
         id TEXT PRIMARY KEY,
@@ -266,7 +239,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // ANNUAL GOALS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE annual_goals (
         id TEXT PRIMARY KEY,
@@ -281,7 +256,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // MONTHLY GOALS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE monthly_goals (
         id TEXT PRIMARY KEY,
@@ -296,7 +273,9 @@ class DatabaseHelper {
       );
     ''');
 
+    // ==========================================================
     // PROJECTS
+    // ==========================================================
     await db.execute('''
       CREATE TABLE projects (
         id TEXT PRIMARY KEY,

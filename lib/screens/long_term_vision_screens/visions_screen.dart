@@ -74,16 +74,6 @@ class _VisionsScreenState extends ConsumerState<VisionsScreen> {
           return {"area": area, "visions": areaVisions};
         }).toList();
 
-        // ---------- Ordenar: primeiro áreas com visão, depois sem ----------
-        grouped.sort((a, b) {
-          final aHasVision = (a["visions"] as List).isNotEmpty;
-          final bHasVision = (b["visions"] as List).isNotEmpty;
-
-          if (aHasVision && !bHasVision) return -1;
-          if (!aHasVision && bHasVision) return 1;
-          return 0;
-        });
-
         return _buildScaffold(
           context: context,
           body: Column(
@@ -139,7 +129,7 @@ class _VisionsScreenState extends ConsumerState<VisionsScreen> {
                             ),
                           ),
 
-                          // ---------- Visões ou NoVision ----------
+                          // ---------- Vision or NoVision ----------
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: areaVisions.isNotEmpty

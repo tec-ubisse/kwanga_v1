@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:kwanga/models/vision_model.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+
 import '../../../custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
 import '../../../models/life_area_model.dart';
+import '../../../models/vision_model.dart';
 import '../../../providers/visions_provider.dart';
 import '../../../widgets/dialogs/kwanga_delete_dialog.dart';
 import '../create_vision_screen.dart';
@@ -15,8 +15,7 @@ class VisionWidget extends ConsumerWidget {
   final LifeAreaModel area;
   final int goalsCount;
   final VisionModel vision;
-  final Function() onTap;
-
+  final VoidCallback onTap;
 
   const VisionWidget({
     super.key,
@@ -28,35 +27,29 @@ class VisionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    const double safeProgress = 0.1;
+    const int percent = 0;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(24),
-              blurRadius: 8,
-              offset: const Offset(4, 4),
-              spreadRadius: -1,
-            )
-          ]
-        ),
+        decoration: BoxDecoration(boxShadow: [cDefaultShadow]),
         child: ClipRRect(
-          borderRadius: BorderRadiusGeometry.circular(16.0),
+          borderRadius: BorderRadius.circular(16),
           child: Slidable(
             key: ValueKey(vision.id),
 
+            /// Ações laterais
             endActionPane: ActionPane(
               motion: const DrawerMotion(),
-              extentRatio: 0.50,
+              extentRatio: 0.5,
               children: [
-                // EDITAR
                 SlidableAction(
                   onPressed: (_) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (ctx) => CreateVision(
+                        builder: (_) => CreateVision(
                           visionToEdit: vision,
                           lifeAreaId: vision.lifeAreaId,
                         ),
@@ -68,16 +61,16 @@ class VisionWidget extends ConsumerWidget {
                   icon: Icons.edit,
                   label: 'Editar',
                 ),
-
-                // REMOVER
                 SlidableAction(
                   onPressed: (_) async {
                     final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (ctx) => KwangaDeleteDialog(
-                        title: "Eliminar Visão",
+                      builder: (_) => KwangaDeleteDialog(
+                        title: 'Eliminar Visão',
                         message:
-                        "Tem a certeza que pretende eliminar a visão \"${vision.description}\"? Esta acção é irreversível.",
+                        'Tem a certeza que pretende eliminar a visão '
+                            '"${vision.description}"?\n'
+                            'Esta acção é irreversível.',
                       ),
                     );
 
@@ -96,41 +89,42 @@ class VisionWidget extends ConsumerWidget {
               ],
             ),
 
+            /// Card
             child: GestureDetector(
               onTap: onTap,
               child: Container(
-                color: Colors.white,
-                child: Padding(
-                  padding: defaultPadding,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          vision.description,
-                          style: tNormal,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                decoration: cardDecoration,
+                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    /// Texto flexível
+                    Expanded(
+                      child: Text(
+                        vision.description,
+                        style: tNormal,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    CircularPercentIndicator(
+                      radius: 32,
+                      lineWidth: 12,
+                      percent: safeProgress,
+                      center: Text(
+                        '$percent%',
+                        style: tSmall.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Expanded(
-                          flex: 1,
-                          child: CircularPercentIndicator(
-                            radius: 32.0,
-                            lineWidth: 12.0,
-                            percent: 0.1,
-                            center: Text('5%'),
-                            progressColor: cMainColor,
-                            backgroundColor: Colors.grey.shade300,
-                            circularStrokeCap: CircularStrokeCap.round,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                      progressColor: cMainColor,
+                      backgroundColor: Colors.grey.shade300,
+                      circularStrokeCap: CircularStrokeCap.round,
+                    ),
+                  ],
                 ),
               ),
             ),

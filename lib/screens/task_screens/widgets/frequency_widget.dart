@@ -23,6 +23,7 @@ class FrequencyWidget extends StatelessWidget {
       updated.add(index);
     }
 
+    // 🔑 Sempre emitir um NOVO Set
     onChanged(updated);
   }
 
@@ -33,7 +34,6 @@ class FrequencyWidget extends StatelessWidget {
       children: [
         Text('Repetir em...', style: tLabel),
         const SizedBox(height: 8),
-
         Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
@@ -53,8 +53,7 @@ class FrequencyWidget extends StatelessWidget {
                   width: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                    isSelected ? cMainColor : Colors.transparent,
+                    color: isSelected ? cMainColor : Colors.transparent,
                     border: Border.all(
                       color: isSelected
                           ? cMainColor

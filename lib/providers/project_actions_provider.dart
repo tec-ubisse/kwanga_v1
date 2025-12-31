@@ -2,8 +2,8 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/models/task_model.dart';
+import 'package:kwanga/providers/tasks/tasks_notifier.dart';
 import 'package:kwanga/data/database/task_dao.dart';
-import 'package:kwanga/providers/tasks/tasks_provider.dart';
 
 final projectActionsDaoProvider = Provider((ref) => TaskDao());
 
@@ -22,14 +22,18 @@ class ProjectActionsNotifier extends AsyncNotifier<List<TaskModel>> {
     return <TaskModel>[];
   }
 
+  // -------------------------------------------------------------
   // LOAD ACTIONS
+  // -------------------------------------------------------------
   Future<void> loadByProjectId(String projectId) async {
     _projectId = projectId;
     final list = await _dao.getTasksByProjectId(projectId);
     state = AsyncData(List<TaskModel>.from(list));
   }
 
+  // -------------------------------------------------------------
   // ADD ACTION
+  // -------------------------------------------------------------
   Future<void> addAction({
     required String projectId,
     required int userId,
@@ -46,23 +50,29 @@ class ProjectActionsNotifier extends AsyncNotifier<List<TaskModel>> {
 
     await ref.read(tasksProvider.notifier).addTask(newTask);
 
+    // Recarregar apenas se estiver no mesmo projeto
     if (_projectId == projectId) {
       final refreshed = await _dao.getTasksByProjectId(projectId);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
+  // -------------------------------------------------------------
   // EDIT ACTION
+  // -------------------------------------------------------------
   Future<void> editAction(TaskModel updated) async {
     await ref.read(tasksProvider.notifier).updateTask(updated);
 
     if (_projectId != null && updated.projectId != null) {
-      final refreshed = await _dao.getTasksByProjectId(updated.projectId!);
+      final refreshed =
+      await _dao.getTasksByProjectId(updated.projectId!);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
+  // -------------------------------------------------------------
   // TOGGLE COMPLETE
+  // -------------------------------------------------------------
   Future<void> toggleActionDone(String actionId) async {
     final items = state.value ?? [];
     final idx = items.indexWhere((t) => t.id == actionId);
@@ -76,40 +86,44 @@ class ProjectActionsNotifier extends AsyncNotifier<List<TaskModel>> {
     );
 
     if (_projectId != null && action.projectId != null) {
-      final refreshed = await _dao.getTasksByProjectId(action.projectId!);
+      final refreshed =
+      await _dao.getTasksByProjectId(action.projectId!);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
+  // -------------------------------------------------------------
   // REMOVE ACTION
+  // -------------------------------------------------------------
   Future<void> removeAction(String actionId) async {
     await ref.read(tasksProvider.notifier).deleteTask(actionId);
 
     if (_projectId != null) {
-      final refreshed = await _dao.getTasksByProjectId(_projectId!);
+      final refreshed =
+      await _dao.getTasksByProjectId(_projectId!);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
+  // -------------------------------------------------------------
   // ALLOCATE ACTION TO LIST
-  Future<void> allocateActionToList(
-      TaskModel action,
+  // -------------------------------------------------------------
+  Future<void> allocateActionToList(TaskModel action,
       String listId,
-      int userId,
-      ) async {
+      int userId,) async {
     await ref.read(tasksProvider.notifier).allocateProjectTaskToList(
-      projectTask: action,
-      targetListId: listId,
-      userId: userId,
-    );
+        projectTask: action, targetListId: listId, userId: userId);
 
     if (_projectId != null) {
-      final refreshed = await _dao.getTasksByProjectId(_projectId!);
+      final refreshed =
+      await _dao.getTasksByProjectId(_projectId!);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
+  // -------------------------------------------------------------
   // MOVE ACTION TO ANOTHER PROJECT
+  // -------------------------------------------------------------
   Future<void> moveActionToProject(String actionId, String newProjectId) async {
     final items = state.value ?? [];
     final idx = items.indexWhere((a) => a.id == actionId);
@@ -125,42 +139,62 @@ class ProjectActionsNotifier extends AsyncNotifier<List<TaskModel>> {
     await ref.read(tasksProvider.notifier).updateTask(updated);
 
     if (_projectId != null) {
-      final refreshed = await _dao.getTasksByProjectId(_projectId!);
+      final refreshed =
+      await _dao.getTasksByProjectId(_projectId!);
       state = AsyncData(List<TaskModel>.from(refreshed));
     }
   }
 
-  // REORDER ACTIONS (CORRIGIDO)
+  // -------------------------------------------------------------
+  // REORDER ACTIONS (OTIMIZADO E SEGURO)
+  // -------------------------------------------------------------
   Future<void> reorderActions(int oldIndex, int newIndex) async {
-    final currentItems = state.value ?? [];
-    final List<TaskModel> list = List<TaskModel>.from(currentItems);
+    final items = state.value ?? [];
+    if (items.isEmpty) return;
 
-    if (newIndex > oldIndex) newIndex--;
+    // Cópia segura
+    final list = List<TaskModel>.from(items);
 
-    final item = list.removeAt(oldIndex);
-    list.insert(newIndex, item);
+    // Ajuste do newIndex (comportamento padrão do ReorderableListView)
+    // Quando move para baixo, o Flutter conta como se o item ainda estivesse lá
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
 
-    // Atualizar UI otimisticamente
+    final moved = list.removeAt(oldIndex);
+    list.insert(newIndex, moved);
+
+    // UI otimista imediata
     state = AsyncData(List<TaskModel>.from(list));
 
-    // Persistir a nova ordem na base de dados
     try {
+      // Atualizar apenas orderIndex alterados
+      final updates = <Future>[];
+
       for (int i = 0; i < list.length; i++) {
-        if (list[i].orderIndex != i) {
-          final updated = list[i].copyWith(orderIndex: i);
-          await _dao.updateTask(updated);
+        final task = list[i];
+        if (task.orderIndex != i) {
+          final updated = task.copyWith(orderIndex: i);
+          updates.add(
+            ref.read(tasksProvider.notifier).updateTask(updated),
+          );
         }
       }
 
-      // Recarregar para garantir sincronização
+      // Executa updates em paralelo
+      await Future.wait(updates);
+
+      // Garantir estado final consistente
       if (_projectId != null) {
-        final refreshed = await _dao.getTasksByProjectId(_projectId!);
+        final refreshed =
+        await _dao.getTasksByProjectId(_projectId!);
         state = AsyncData(List<TaskModel>.from(refreshed));
       }
     } catch (e) {
-      // Se falhar, reverter para o estado anterior
+      // Fallback seguro
       if (_projectId != null) {
-        final refreshed = await _dao.getTasksByProjectId(_projectId!);
+        final refreshed =
+        await _dao.getTasksByProjectId(_projectId!);
         state = AsyncData(List<TaskModel>.from(refreshed));
       }
     }

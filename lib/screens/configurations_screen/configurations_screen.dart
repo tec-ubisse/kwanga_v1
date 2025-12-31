@@ -1,269 +1,286 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kwanga/custom_themes/blue_accent_theme.dart';
-import 'package:kwanga/custom_themes/text_style.dart';
+import 'package:kwanga/custom_themes/app_text_theme.dart';
 import 'package:kwanga/screens/login_screens/phone_login.dart';
-import 'package:kwanga/utils/secure_storage.dart';
 import 'package:kwanga/screens/navigation_screens/custom_drawer.dart';
 import 'package:kwanga/providers/auth_provider.dart';
+
+import 'edit_profile_screen.dart';
 
 class ConfigurationsScreen extends ConsumerWidget {
   const ConfigurationsScreen({super.key});
 
+  String _getUserInitials(String? nome, String? apelido) {
+    if (nome == null || apelido == null) return '?';
+
+    final firstInitial = nome.isNotEmpty ? nome[0].toUpperCase() : '';
+    final lastInitial = apelido.isNotEmpty ? apelido[0].toUpperCase() : '';
+
+    return '$firstInitial$lastInitial';
+  }
+
+  String _getUserFullName(String? nome, String? apelido, String phone) {
+    if (nome != null && apelido != null) {
+      return '$nome $apelido';
+    }
+    return phone;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: cMainColor,
-        foregroundColor: cWhiteColor,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
         title: Text(
           'Configurações',
-          style: tTitle.copyWith(fontWeight: FontWeight.w500),
+          style: AppTextTheme.headlineLarge(context)
+              .copyWith(fontWeight: FontWeight.w500, color: colors.onPrimary),
         ),
       ),
       drawer: const CustomDrawer(),
       body: authState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro: $err')),
+        error: (err, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Erro ao carregar dados',
+                  style: AppTextTheme.headlineSmall(context),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  err.toString(),
+                  style: AppTextTheme.bodySmall(context),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Nenhum utilizador logado.'));
           }
 
           return Padding(
-            padding: defaultPadding,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // User Identification - Profile picture, name and e-mail
                 Expanded(
                   child: ListView(
                     children: [
+                      // ==================== PERFIL ====================
                       Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        spacing: 8.0,
                         children: [
                           CircleAvatar(
-                            radius: 32.0,
-                            backgroundColor: cSecondaryColor,
+                            radius: 40.0,
+                            backgroundColor: colors.secondary,
                             child: Text(
-                              user.phone.substring(0, 2).toUpperCase(),
-                              style: tTitle,
+                              _getUserInitials(user.nome, user.apelido),
+                              style: AppTextTheme.displaySmall(context)
+                                  .copyWith(color: colors.onSecondary),
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user.phone,
-                                style: tNormal,
+                          const SizedBox(height: 12),
+                          Text(
+                            _getUserFullName(
+                              user.nome,
+                              user.apelido,
+                              user.phone,
+                            ),
+                            style: AppTextTheme.bodyLarge(context)
+                                .copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            user.phone,
+                            style: AppTextTheme.bodySmall(context),
+                          ),
+                          const SizedBox(height: 16),
+
+                          SizedBox(
+                            width: 180,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: Text(
+                                'Editar perfil',
+                                style: AppTextTheme.labelLarge(context),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const Divider(),
-                      // Theme handling
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Text(
-                              'Temas',
-                              style: tSmallTitle.copyWith(color: cBlackColor),
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: cMainColor.withAlpha(24),
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    spacing: 8.0,
-                                    children: [
-                                      Container(
-                                        width: 16.0,
-                                        height: 16.0,
-                                        decoration: BoxDecoration(
-                                          color: cMainColor,
-                                          borderRadius: BorderRadius.circular(4.0),
-                                        ),
-                                      ),
-                                      Text('Dark-Blue', style: tNormal),
-                                    ],
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                    const EditProfileScreen(),
                                   ),
-                                  Radio(value: context, groupValue: null, onChanged: (_) {}),
-                                ],
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: colors.primary,
+                                side: BorderSide(color: colors.primary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  spacing: 8.0,
-                                  children: [
-                                    Container(
-                                      width: 16.0,
-                                      height: 16.0,
-                                      decoration: BoxDecoration(
-                                        color: cSecondaryColor,
-                                        borderRadius: BorderRadius.circular(4.0),
-                                      ),
-                                    ),
-                                    Text('Light-Blue', style: tNormal),
-                                  ],
-                                ),
-                                Radio(value: context, groupValue: null, onChanged: (_) {}),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  spacing: 8.0,
-                                  children: [
-                                    Container(
-                                      width: 16.0,
-                                      height: 16.0,
-                                      decoration: BoxDecoration(
-                                        color: cTertiaryColor,
-                                        borderRadius: BorderRadius.circular(4.0),
-                                      ),
-                                    ),
-                                    Text('Red-Accent', style: tNormal),
-                                  ],
-                                ),
-                                Radio(value: context, groupValue: null, onChanged: (_) {}),
-                              ],
-                            ),
-                          ),
-                          const Divider(),
                         ],
                       ),
 
-                      // Links
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+
+                      // ==================== TEMAS ====================
                       Column(
-                        spacing: 24.0,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Temas',
+                            style: AppTextTheme.headlineSmall(context),
+                          ),
+                          const SizedBox(height: 16),
+
+                          _buildThemeOption(
+                            context: context,
+                            color: colors.primary,
+                            label: 'Light-Mode',
+                            isSelected: true,
+                            onTap: () {},
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          _buildThemeOption(
+                            context: context,
+                            color: colors.primary,
+                            label: 'Dark-Mode',
+                            isSelected: true,
+                            onTap: () {},
+                          ),
+
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 16),
+
+                      // ==================== LINKS ====================
+                      Column(
                         children: [
                           Text(
                             'Links',
-                            style: tSmallTitle.copyWith(color: cBlackColor),
+                            style: AppTextTheme.headlineSmall(context),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('LinkedIn', style: tNormal),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12.0),
-                                  child: Image.asset(
-                                    'assets/icons/linkedin.png',
-                                    width: 24.0,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          const SizedBox(height: 16),
+
+                          _buildLinkItem(
+                            context: context,
+                            label: 'LinkedIn',
+                            icon: 'assets/icons/linkedin.png',
+                            onTap: () {},
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Facebook', style: tNormal),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12.0),
-                                  child: Image.asset(
-                                    'assets/icons/facebook.png',
-                                    width: 24.0,
-                                  ),
-                                ),
-                              ],
-                            ),
+
+                          const SizedBox(height: 12),
+
+                          _buildLinkItem(
+                            context: context,
+                            label: 'Facebook',
+                            icon: 'assets/icons/facebook.png',
+                            onTap: () {},
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Instagram', style: tNormal),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12.0),
-                                  child: Image.asset(
-                                    'assets/icons/instagram.png',
-                                    width: 24.0,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          const SizedBox(height: 12),
+
+                          _buildLinkItem(
+                            context: context,
+                            label: 'Instagram',
+                            icon: 'assets/icons/instagram.png',
+                            onTap: () {},
                           ),
-                          const Divider(),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      const Divider(),
                     ],
                   ),
                 ),
 
-                // Log out Button
+                // ==================== LOG OUT ====================
                 SafeArea(
                   child: Column(
                     children: [
                       SizedBox(
+                        width: double.infinity,
                         height: 52,
-                        child: GestureDetector(
-                          onTap: () async {
-                            await SecureStorage.clearAll();
-                            ref.invalidate(authProvider);
-
-                            if (context.mounted) {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (_) => const PhoneLogin(isLogin: true)),
-                                    (route) => false,
-                              );
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12.0),
-                              border: Border.all(color: cBlackColor)
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                spacing: 8.0,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.person_off_outlined, color: cBlackColor),
-                                  Text(
-                                    'Log out',
-                                    style: tNormal.copyWith(
-                                      color: cBlackColor,
-                                      fontWeight: FontWeight.w600,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirmar'),
+                                content: const Text(
+                                  'Tem certeza que deseja sair?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text(
+                                      'Sair',
+                                      style: TextStyle(color: Colors.red),
                                     ),
                                   ),
                                 ],
                               ),
+                            );
+
+                            if (confirm == true) {
+                              await ref
+                                  .read(authProvider.notifier)
+                                  .logout();
+
+                              if (context.mounted) {
+                                Navigator.of(context)
+                                    .pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                    const PhoneLogin(isLogin: true),
+                                  ),
+                                      (route) => false,
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.logout),
+                          label: Text(
+                            'Log out',
+                            style: AppTextTheme.labelLarge(context),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: colors.onSurface),
+                            foregroundColor: colors.onSurface,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16.0,)
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -274,4 +291,84 @@ class ConfigurationsScreen extends ConsumerWidget {
       ),
     );
   }
+
+  // ==================== WIDGETS AUXILIARES ====================
+
+  Widget _buildThemeOption({
+    required BuildContext context,
+    required Color color,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: AppTextTheme.bodyMedium(context).copyWith(
+                    fontWeight:
+                    isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+            Icon(
+              label=='Light-Mode'
+                  ? Icons.check_circle
+                  : Icons.circle_outlined,
+              color: isSelected ? color : Colors.grey.shade400,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildLinkItem({
+    required BuildContext context,
+    required String label,
+    required String icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.0),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: AppTextTheme.bodyMedium(context),
+            ),
+            Image.asset(
+              icon,
+              width: 28,
+              height: 28,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }

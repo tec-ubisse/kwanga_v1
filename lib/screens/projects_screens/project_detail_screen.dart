@@ -7,11 +7,11 @@ import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'package:kwanga/utils/date_utils.dart';
-import '../../widgets/feedback_widget.dart';
+import '../../models/list_model.dart';
+import '../task_screens/new_task.dart';
 import 'widgets/project_header.dart';
 import 'widgets/project_info_bar.dart';
 import 'widgets/project_actions_list.dart';
-import 'package:kwanga/widgets/dialogs/kwanga_dialog.dart';
 import 'package:kwanga/providers/auth_provider.dart';
 import 'cards/no_tasks_project_card.dart';
 
@@ -64,29 +64,36 @@ class _ProjectDetailScreenState
       backgroundColor: cWhiteColor,
 
       bottomNavigationBar: BottomActionBar(
-        buttonText: 'Nova Acção',
+        buttonText: 'Nova tarefa',
         onPressed: () async {
-          final newDesc = await showKwangaActionDialog(
+          final user = ref.read(authProvider).value;
+          if (user == null || user.id == null) return;
+
+          final result = await Navigator.push(
             context,
-            title: "Adicionar tarefa",
-            hint: "Escreva a sua tarefa aqui",
-            icon: Icons.edit,
+            MaterialPageRoute(
+              builder: (_) => NewTaskScreen(
+                projectId: widget.project.id,
+                fixList: true,
+                listModel: ListModel(
+                  userId: user.id!,
+                  listType: 'action',
+                  description: 'Tarefas do projecto',
+                  isProject: true,
+                ),
+              ),
+            ),
           );
 
-          if (newDesc != null && newDesc.trim().isNotEmpty) {
-            final user = ref.read(authProvider).value;
-            if (user == null || user.id == null) return;
-
-            await ref.read(projectActionsProvider.notifier).addAction(
-              projectId: widget.project.id,
-              userId: user.id!,
-              description: newDesc.trim(),
-            );
-
-            showFeedbackScaffoldMessenger(context, "Tarefa adicionada com sucesso");
+          // 👇 se voltou com uma tarefa criada/editada
+          if (result != null) {
+            ref.read(projectActionsProvider.notifier)
+                .loadByProjectId(widget.project.id);
           }
         },
+
       ),
+
 
       body: actionsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -124,7 +131,7 @@ class _ProjectDetailScreenState
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
-                  'Acções do projecto',
+                  'Tarefas do projecto',
                   style: tSmallTitle.copyWith(fontSize: 18),
                 ),
               ),
@@ -143,16 +150,13 @@ class _ProjectDetailScreenState
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: total > 0
-                          ? ListView(
-                        children: [
-                          ProjectActionsList(
-                            projectId: widget.project.id,
-                            actions: actions,
-                          ),
-                        ],
+                          ? ProjectActionsList(
+                        projectId: widget.project.id,
+                        actions: actions,
                       )
                           : const NoTasksProjectCard(),
                     ),
+
                   ),
                 ),
               ),

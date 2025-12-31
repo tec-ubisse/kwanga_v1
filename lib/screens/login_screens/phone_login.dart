@@ -22,13 +22,13 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
   bool _otpRequested = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final phone = ref.watch(phoneLoginProvider);
-    final isValid = phone.length == 9;
 
-    final otpRequestState = ref.watch(otpRequestProvider);
-
-    /// 🔔 Listener do evento REAL de envio de OTP
     ref.listen<AsyncValue<void>>(
       otpRequestProvider,
           (previous, next) {
@@ -37,10 +37,8 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
             next is AsyncData) {
           _otpRequested = false;
 
-
-          // 🔑 Lê o OTP atual (caso tenha sido colado antes)
           final otp = ref.read(otpProvider);
-          print('THIS: $otp');
+          print('🔐 OTP RECEBIDO: $otp');
 
           Navigator.push(
             context,
@@ -65,6 +63,10 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
       },
     );
 
+    final phone = ref.watch(phoneLoginProvider);
+    final isValid = phone.length == 9;
+    final otpRequestState = ref.watch(otpRequestProvider);
+
     return Scaffold(
       backgroundColor: cMainColor,
       body: Stack(
@@ -73,7 +75,7 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
           Opacity(
             opacity: 0.2,
             child: Image.asset(
-              'assets/background.jpg',
+              'assets/img.png',
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
@@ -160,7 +162,7 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
 
                       const SizedBox(height: 16),
 
-                      /// 🔵 BOTÃO ENVIAR OTP (UI RESTAURADA)
+                      /// 🔵 BOTÃO ENVIAR OTP
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -191,8 +193,7 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
                               ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child:
-                            CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
@@ -210,7 +211,7 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
 
                       const SizedBox(height: 16),
 
-                      /// 🔁 LOGIN / CADASTRO (CORRETO)
+                      /// 🔁 LOGIN / CADASTRO
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -223,7 +224,6 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
                           ),
                           GestureDetector(
                             onTap: () {
-                              // limpa estados
                               ref.invalidate(phoneLoginProvider);
                               ref.invalidate(otpProvider);
 
@@ -262,7 +262,7 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
     );
   }
 
-  /// ------------------ KEYPAD ------------------
+  // ------------------ KEYPAD ------------------
 
   Widget _buildKeypad() {
     final notifier = ref.read(phoneLoginProvider.notifier);
@@ -330,8 +330,10 @@ class _PhoneLoginState extends ConsumerState<PhoneLogin> {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(14),
         ),
-        child:
-        Icon(icon, color: Colors.grey.shade700),
+        child: Icon(
+          icon,
+          color: Colors.grey.shade700,
+        ),
       ),
     );
   }

@@ -8,7 +8,8 @@ class SyncService {
       ) async {
     if (task.linkedActionId == null) return [];
 
-    final linked = await dao.getTasksByLinkedActionId(task.linkedActionId!);
+    final linked =
+    await dao.getTasksByLinkedActionId(task.linkedActionId!);
 
     if (linked.isEmpty) return [];
 
@@ -18,11 +19,15 @@ class SyncService {
       final updated = t.copyWith(
         description: task.description,
         completed: task.completed,
-        deadline: task.deadline,
-        time: task.time,
-        frequency: task.frequency == null
-            ? null
-            : List<String>.from(task.frequency!),
+
+        // 🔑 CAMPOS REMOVÍVEIS — SEMPRE Nullable
+        deadline: Nullable(task.deadline),
+        time: Nullable(task.time),
+        frequency: Nullable(
+          task.frequency == null
+              ? null
+              : List<String>.from(task.frequency!),
+        ),
       );
 
       await dao.updateTask(updated);

@@ -94,54 +94,54 @@ class LifeAreaDetailsScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          body: CustomScrollView(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final headerHeight = constraints.maxHeight * 0.33;
 
-            slivers: [
-              // Espaço superior
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 24),
-              ),
-
-              // Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Header(area: area),
-                ),
-              ),
-
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 32),
-              ),
-
-              // Conteúdo principal (fundo cinza)
-              SliverToBoxAdapter(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xfff5f5f5),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(32),
+              return Column(
+                children: [
+                  // 🔹 HEADER FIXO (1/3 da tela)
+                  SizedBox(
+                    height: headerHeight,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Header(area: area),
+                      ),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Propósito
-                        PurposeWidget(area: area),
 
-                        const SizedBox(height: 32),
+                  // 🔹 CONTEÚDO SCROLLÁVEL (2/3 restantes)
+                  Expanded(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xfff5f5f5),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(32),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Propósito
+                            PurposeWidget(area: area),
 
-                        // Estatísticas
-                        StatsGrid(),
-                      ],
+                            const SizedBox(height: 32),
+
+                            // Estatísticas
+                            StatsGrid(),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
+
 
         );
       },

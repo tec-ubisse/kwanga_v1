@@ -3,11 +3,12 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 
 import '../../../custom_themes/blue_accent_theme.dart';
-import '../../../models/project_model.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
-class KwangaProgressCard extends StatelessWidget {
-  final ProjectModel project;
+class KwangaProgressCard<T> extends StatelessWidget {
+  final T item;
+  final String Function(T) getTitle;
+  final String Function(T) getId;
   final double progress;
   final VoidCallback onTap;
   final VoidCallback onEdit;
@@ -15,7 +16,9 @@ class KwangaProgressCard extends StatelessWidget {
 
   const KwangaProgressCard({
     super.key,
-    required this.project,
+    required this.item,
+    required this.getTitle,
+    required this.getId,
     required this.progress,
     required this.onTap,
     required this.onEdit,
@@ -24,63 +27,88 @@ class KwangaProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = (progress * 100).round();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Slidable(
-        key: ValueKey(project.id),
+    final safeProgress = progress.clamp(0.0, 1.0);
+    final percent = (safeProgress * 100).round();
 
-        endActionPane: ActionPane(
-          motion: const DrawerMotion(),
-          extentRatio: 0.45,
-          children: [
-            // EDITAR
-            SlidableAction(
-              onPressed: (_) => onEdit(),
-              backgroundColor: cSecondaryColor,
-              foregroundColor: Colors.white,
-              icon: Icons.edit,
-            ),
-
-            // APAGAR
-            SlidableAction(
-              onPressed: (_) => onDelete(),
-              backgroundColor: cTertiaryColor,
-              foregroundColor: Colors.white,
-              icon: Icons.delete,
-            ),
-          ],
-        ),
-
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            color: Colors.white,
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    project.title,
-                    style: tNormal,
-                  ),
+    return Slidable(
+      key: ValueKey(getId(item)),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.45,
+        children: [
+          SlidableAction(
+            onPressed: (_) => onEdit(),
+            backgroundColor: cSecondaryColor,
+            foregroundColor: Colors.white,
+            icon: Icons.edit,
+            borderRadius: BorderRadius.zero,
+          ),
+          SlidableAction(
+            onPressed: (_) async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirmar Exclusão'),
+                  content: const Text(
+                      'Tem certeza que deseja excluir este item?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Excluir',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  flex: 1,
-                  child: CircularPercentIndicator(
-                    radius: 32.0,
-                    lineWidth: 12.0,
-                    percent: progress,
-                    center: Text('$percent%'),
-                    progressColor: cMainColor,
-                    backgroundColor: Colors.grey.shade300,
-                    circularStrokeCap: CircularStrokeCap.round,
-                  ),
+              );
+
+              if (confirm == true) {
+                onDelete();
+              }
+            },
+            backgroundColor: cTertiaryColor,
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            borderRadius: BorderRadius.zero,
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          color: Colors.deepPurple,
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  getTitle(item),
+                  style: tNormal,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              CircularPercentIndicator(
+                radius: 28,
+                lineWidth: 10,
+                percent: safeProgress,
+                center: Text(
+                  '$percent%',
+                  style: tSmall.copyWith(fontWeight: FontWeight.w600),
+                ),
+                progressColor: cMainColor,
+                backgroundColor: Colors.grey.shade300,
+                circularStrokeCap: CircularStrokeCap.round,
+              ),
+            ],
           ),
         ),
       ),

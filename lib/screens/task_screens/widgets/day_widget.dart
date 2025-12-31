@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 enum DueDateOption {
   today,
@@ -25,12 +24,10 @@ class DayWidget extends StatefulWidget {
 }
 
 class _DayWidgetState extends State<DayWidget> {
-
   String _customLabel() {
     if (widget.value == null) return 'Escolher';
     return DateFormat('dd/MM').format(widget.value!);
   }
-
 
   DueDateOption? get _selectedOption {
     if (widget.value == null) return null;
@@ -47,7 +44,6 @@ class _DayWidgetState extends State<DayWidget> {
 
     if (selected == today) return DueDateOption.today;
     if (selected == tomorrow) return DueDateOption.tomorrow;
-
     return DueDateOption.custom;
   }
 
@@ -73,8 +69,14 @@ class _DayWidgetState extends State<DayWidget> {
     );
 
     if (pickedDate != null) {
-      widget.onChanged(pickedDate);
+      widget.onChanged(
+        DateTime(pickedDate.year, pickedDate.month, pickedDate.day),
+      );
     }
+  }
+
+  void _removeDate() {
+    widget.onChanged(null);
   }
 
   void _onSelect(DueDateOption option) {
@@ -83,25 +85,21 @@ class _DayWidgetState extends State<DayWidget> {
 
     switch (option) {
       case DueDateOption.today:
-        widget.onChanged(
-          _selectedOption == DueDateOption.today ? null : today,
-        );
+        _selectedOption == DueDateOption.today
+            ? _removeDate()
+            : widget.onChanged(today);
         break;
 
       case DueDateOption.tomorrow:
-        widget.onChanged(
-          _selectedOption == DueDateOption.tomorrow
-              ? null
-              : today.add(const Duration(days: 1)),
-        );
+        _selectedOption == DueDateOption.tomorrow
+            ? _removeDate()
+            : widget.onChanged(today.add(const Duration(days: 1)));
         break;
 
       case DueDateOption.custom:
-        if (_selectedOption == DueDateOption.custom) {
-          widget.onChanged(null); // 👈 remove a data
-        } else {
-          _openDatePicker();
-        }
+        _selectedOption == DueDateOption.custom
+            ? _removeDate()
+            : _openDatePicker();
         break;
     }
   }
@@ -172,4 +170,3 @@ class _DayWidgetState extends State<DayWidget> {
     );
   }
 }
-

@@ -1,36 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../../../custom_themes/blue_accent_theme.dart';
 import '../../../custom_themes/text_style.dart';
-import '../../../models/annual_goal_model.dart';
-import '../../../models/life_area_model.dart';
-import '../../../providers/annual_goals_provider.dart';
-import '../../../widgets/dialogs/kwanga_delete_dialog.dart';
-import '../create_annual_goal_screen.dart';
+import '../../../models/monthly_goal_model.dart';
 
-class GoalWidget extends ConsumerWidget {
-  final AnnualGoalModel goal;
-  final LifeAreaModel lifeArea;
-  final double progress;
-  final bool isCompleted;
-  final VoidCallback? onTap;
+class MonthlyGoalWidget extends StatelessWidget {
+  final MonthlyGoalModel goal;
+  final VoidCallback onOpenProjects;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const GoalWidget({
+  const MonthlyGoalWidget({
     super.key,
     required this.goal,
-    required this.lifeArea,
-    required this.progress,
-    required this.isCompleted,
-    this.onTap,
+    required this.onOpenProjects,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final safeProgress = (progress / 100).clamp(0.0, 1.0);
-    final percent = (safeProgress * 100).round();
+  Widget build(BuildContext context) {
+    const double safeProgress = 0.1;
+    const int percent = 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -40,49 +33,19 @@ class GoalWidget extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           child: Slidable(
             key: ValueKey(goal.id),
-
-            /// Ações laterais
             endActionPane: ActionPane(
               motion: const DrawerMotion(),
               extentRatio: 0.5,
               children: [
                 SlidableAction(
-                  onPressed: (_) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CreateAnnualGoalScreen(
-                          annualGoalToEdit: goal,
-                          preselectedYear: goal.year,
-                          visionId: goal.visionId,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: (_) => onEdit(),
                   backgroundColor: cSecondaryColor,
                   foregroundColor: Colors.white,
                   icon: Icons.edit,
                   label: 'Editar',
                 ),
                 SlidableAction(
-                  onPressed: (_) async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => KwangaDeleteDialog(
-                        title: 'Eliminar Objectivo Anual',
-                        message:
-                        'Tem a certeza que pretende apagar o objectivo '
-                            '"${goal.description}"? Esta acção é irreversível.',
-                      ),
-                    );
-
-                    if (confirm == true) {
-                      await ref
-                          .read(annualGoalsProvider.notifier)
-                          .removeAnnualGoal(goal.id);
-                      ref.invalidate(annualGoalsProvider);
-                    }
-                  },
+                  onPressed: (_) => onDelete(),
                   backgroundColor: cTertiaryColor,
                   foregroundColor: Colors.white,
                   icon: Icons.delete,
@@ -90,17 +53,17 @@ class GoalWidget extends ConsumerWidget {
                 ),
               ],
             ),
-
-            /// Card
             child: GestureDetector(
-              onTap: onTap,
+              onTap: onOpenProjects,
               child: Container(
                 decoration: cardDecoration,
-                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10.0,
+                  horizontal: 12.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    /// Texto flexível
                     Expanded(
                       child: Text(
                         goal.description,
@@ -109,9 +72,7 @@ class GoalWidget extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     CircularPercentIndicator(
                       radius: 32,
                       lineWidth: 12,

@@ -41,8 +41,8 @@ class MonthlyGoalCard extends ConsumerWidget {
               context: context,
               builder: (context) {
                 return KwangaDeleteDialog(
-                  title: "Eliminar objetivo",
-                  message: "Tens certeza que desejas eliminar este objetivo mensal?",
+                  title: "Eliminar objectivo",
+                  message: "Tens certeza que desejas eliminar este objectivo mensal?",
                 );
               },
             );

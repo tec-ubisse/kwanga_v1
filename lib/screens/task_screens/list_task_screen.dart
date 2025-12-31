@@ -5,7 +5,6 @@ import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/list_model.dart';
 import 'package:kwanga/models/task_model.dart';
 import 'package:kwanga/providers/tasks/tasks_provider.dart';
-import 'package:kwanga/screens/task_screens/create_task_screen.dart';
 import 'package:kwanga/screens/task_screens/new_task.dart';
 import 'package:kwanga/screens/task_screens/widgets/task_list_view.dart';
 import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';

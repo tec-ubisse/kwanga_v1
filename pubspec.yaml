@@ -50,6 +50,9 @@ dependencies:
   riverpod: 3.0.3
   percent_indicator: ^4.2.5
   state_notifier: ^1.0.0
+  reorderable_grid_view: ^2.2.8
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
 #  shared_preferences: ^2.5.3
 
 

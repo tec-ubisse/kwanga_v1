@@ -18,14 +18,17 @@ class GoalsForYear extends StatelessWidget {
     final yearlyGoals = goals.where((g) => g.year == year).toList();
 
     if (yearlyGoals.isEmpty) {
-      return const KwangaEmptyCard(message: 'Sem objectivo anual definido para este ano');
+      return const KwangaEmptyCard(
+        message: 'Sem objectivo anual definido para este ano',
+      );
     }
 
     return Column(
       children: [
         for (final g in yearlyGoals)
-          AnnualGoalCard(g: g),
+          AnnualGoalCard(goal: g), // ✅ FIX
       ],
     );
   }
 }
+

@@ -14,13 +14,14 @@ import 'package:kwanga/widgets/buttons/bottom_action_bar.dart';
 import 'widgets/goal_area_section.dart';
 import 'widgets/year_selector.dart';
 import 'create_annual_goal_screen.dart';
+import 'package:kwanga/screens/monthly_goals_screens/goals_by_annual_goal.dart';
+
 
 class AnnualGoals extends ConsumerStatefulWidget {
   const AnnualGoals({super.key});
 
   @override
-  ConsumerState<AnnualGoals> createState() =>
-      _AnnualGoalsScreenState();
+  ConsumerState<AnnualGoals> createState() => _AnnualGoalsScreenState();
 }
 
 class _AnnualGoalsScreenState extends ConsumerState<AnnualGoals> {
@@ -60,7 +61,8 @@ class _AnnualGoalsScreenState extends ConsumerState<AnnualGoals> {
       body: SafeArea(
         child: areasAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Center(child: Text("Erro ao carregar áreas.")),
+          error: (_, __) =>
+          const Center(child: Text("Erro ao carregar áreas.")),
           data: (areas) {
             return visionsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -68,26 +70,41 @@ class _AnnualGoalsScreenState extends ConsumerState<AnnualGoals> {
               const Center(child: Text("Erro ao carregar visões.")),
               data: (visions) {
                 return goalsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                  const Center(child: CircularProgressIndicator()),
                   error: (_, __) =>
                   const Center(child: Text("Erro ao carregar objectivos.")),
                   data: (goals) {
+                    /// Inicialização segura do ano selecionado
                     final allYears =
                     goals.map((g) => g.year).toSet().toList()..sort();
 
-                    selectedYear ??=
-                    allYears.isNotEmpty ? allYears.first : DateTime.now().year;
+                    final effectiveYear = selectedYear ??
+                        (allYears.isNotEmpty
+                            ? allYears.first
+                            : DateTime.now().year);
 
+                    if (selectedYear == null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() => selectedYear = effectiveYear);
+                        }
+                      });
+                    }
+
+                    /// Agrupamento por área da vida
                     final grouped = areas.map((area) {
                       final areaVisions = visions
-                          .where((v) => v.lifeAreaId == area.id.toString())
+                          .where(
+                            (v) => v.lifeAreaId == area.id.toString(),
+                      )
                           .map((v) => v.id)
                           .toList();
 
                       final areaGoals = goals
                           .where(
                             (g) =>
-                        g.year == selectedYear &&
+                        g.year == effectiveYear &&
                             areaVisions.contains(g.visionId),
                       )
                           .toList();
@@ -98,56 +115,61 @@ class _AnnualGoalsScreenState extends ConsumerState<AnnualGoals> {
                       };
                     }).toList();
 
-                    grouped.sort((a, b) {
-                      final aHas = (a["goals"] as List).isNotEmpty;
-                      final bHas = (b["goals"] as List).isNotEmpty;
-                      if (aHas && !bHas) return -1;
-                      if (!aHas && bHas) return 1;
-                      return 0;
-                    });
-
                     return Column(
                       children: [
+                        /// Selector de ano
                         Container(
                           color: Colors.white,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                            child: YearSelector(
-                              selectedYear: selectedYear,
-                              lockedVision: visions,
-                              onChanged: (v) {
-                                setState(() => selectedYear = v);
-                              },
-                            ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 12,
+                          ),
+                          child: YearSelector(
+                            selectedYear: effectiveYear,
+                            lockedVision: visions,
+                            onChanged: (v) {
+                              setState(() => selectedYear = v);
+                            },
                           ),
                         ),
+
+                        /// Lista principal (com padding para BottomActionBar)
                         Expanded(
                           child: ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(
+                              8,
+                              0,
+                              8,
+                              96, // espaço seguro para BottomActionBar
+                            ),
                             itemCount: grouped.length,
-                            padding:
-                            const EdgeInsets.symmetric(horizontal: 8),
                             itemBuilder: (_, i) {
                               final area =
                               grouped[i]["area"] as LifeAreaModel;
                               final goals =
                               grouped[i]["goals"] as List<AnnualGoalModel>;
 
-                              if(i<1) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 16.0),
-                                  child: GoalAreaSection(
-                                    area: area,
-                                    goals: goals,
-                                    year: selectedYear!,
-                                  ),
-                                );
-                              } else {
-                                return GoalAreaSection(
+                              return Padding(
+                                padding:
+                                EdgeInsets.only(top: i == 0 ? 16 : 0),
+                                child: GoalAreaSection(
                                   area: area,
                                   goals: goals,
-                                  year: selectedYear!,
-                                );
-                              }
+                                  year: effectiveYear,
+                                  onGoalTap: (goal) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => GoalsByAnnualGoal(
+                                          annualGoal: goal,
+                                          area: area,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                              );
                             },
                           ),
                         ),

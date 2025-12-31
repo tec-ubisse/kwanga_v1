@@ -45,6 +45,20 @@ class ReminderWidget extends StatelessWidget {
     return !_presetOptions.any((o) => o.time == time);
   }
 
+  bool _isSelected(_ReminderOption option) {
+    if (!enabled) return false;
+
+    if (option.time != null) {
+      return option.time == time;
+    }
+
+    return _isCustomTime();
+  }
+
+  void _removeReminder() {
+    onToggle(false); // 🔑 único ponto de remoção
+  }
+
   Future<void> _openTimePicker(BuildContext context) async {
     final pickedTime = await showTimePicker(
       context: context,
@@ -63,18 +77,6 @@ class ReminderWidget extends StatelessWidget {
       onTimeChanged(pickedTime);
     }
   }
-
-  bool _isSelected(_ReminderOption option) {
-    if (!enabled) return false;
-
-    // Presets
-    if (option.time != null) {
-      return option.time == time;
-    }
-
-    return _isCustomTime();
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,23 +101,24 @@ class ReminderWidget extends StatelessWidget {
 
             return GestureDetector(
               onTap: () {
+                // CUSTOM
                 if (option.time == null) {
                   if (enabled && _isCustomTime()) {
-                    onToggle(false); // 👈 remove lembrete custom
+                    _removeReminder(); // 🔥 remove custom
                   } else {
                     _openTimePicker(context);
                   }
                   return;
                 }
 
-                if (_isSelected(option)) {
-                  onToggle(false); // 👈 remove preset
+                // PRESET
+                if (isSelected) {
+                  _removeReminder(); // 🔥 remove preset
                 } else {
                   onToggle(true);
                   onTimeChanged(option.time!);
                 }
               },
-
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(

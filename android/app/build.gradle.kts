@@ -12,6 +12,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -26,7 +28,6 @@ android {
         versionName = flutter.versionName
     }
 
-    // 👉 EDITAR o config existente, NÃO criar outro
     signingConfigs.getByName("debug") {
         storeFile = file("debug.keystore")
         storePassword = "android"
@@ -44,6 +45,11 @@ android {
             isShrinkResources = false
         }
     }
+}
+
+dependencies {
+    // 🔥 exigido por flutter_local_notifications ^19.5.0
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

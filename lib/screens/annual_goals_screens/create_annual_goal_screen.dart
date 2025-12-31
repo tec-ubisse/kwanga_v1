@@ -213,8 +213,6 @@ class _CreateAnnualGoalScreenState
 
                   const SizedBox(height: 24),
 
-                  Text("Ano", style: tSmallTitle),
-                  const SizedBox(height: 8),
 
                   FormField<int>(
                     initialValue: _selectedYear,

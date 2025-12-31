@@ -41,9 +41,17 @@ class ProjectsNotifier extends AsyncNotifier<List<ProjectModel>> {
     state = AsyncData(projects);
   }
 
-  /// ------------------------------------------------------------
-  /// ADD PROJECT
-  /// ------------------------------------------------------------
+  List<ProjectModel> filterByMonthlyGoal(
+      List<ProjectModel> projects,
+      String monthlyGoalId,
+      ) {
+    return projects
+        .where((p) =>
+    p.monthlyGoalId == monthlyGoalId &&
+        !p.isDeleted)
+        .toList();
+  }
+
   Future<void> addProject({
     required int userId,
     required String monthlyGoalId,

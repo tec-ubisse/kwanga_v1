@@ -1,50 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/providers/auth_provider.dart';
-import 'package:kwanga/screens/lists_screens/lists_screen.dart';
 import 'package:kwanga/widgets/kwanga_dropdown_button.dart';
 
-class PersonalDataScreen extends ConsumerStatefulWidget {
-  const PersonalDataScreen({super.key});
+class EditProfileScreen extends ConsumerStatefulWidget {
+  const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<PersonalDataScreen> createState() => _PersonalDataScreenState();
+  ConsumerState<EditProfileScreen> createState() =>
+      _EditProfileScreenState();
 }
 
-class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
+class _EditProfileScreenState
+    extends ConsumerState<EditProfileScreen> {
   final _nomeController = TextEditingController();
   final _apelidoController = TextEditingController();
   final _emailController = TextEditingController();
 
-  final List<String> _genders = ["Feminino", "Masculino", "Outro"];
-  late String _genderValue = _genders.first;
+  final List<String> _genders = ['Feminino', 'Masculino', 'Outro'];
+  String? _genderValue;
 
   int? _selectedDay;
   int? _selectedMonth;
   int? _selectedYear;
 
-  String? _emailError;
-  final _emailRegex = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$');
-
   bool _isSubmitting = false;
 
-  // ------------------ EMAIL ------------------
+  // ------------------ INIT ------------------
 
-  void _validateEmail(String value) {
-    if (value.trim().isEmpty) {
-      setState(() => _emailError = 'Informe o e-mail');
-      return;
+  @override
+  void initState() {
+    super.initState();
+
+    final user = ref.read(authProvider).value;
+
+    _nomeController.text = user?.nome ?? '';
+    _apelidoController.text = user?.apelido ?? '';
+    _emailController.text = user?.email ?? '';
+    _genderValue = user?.genero;
+
+    if (user?.dataNascimento != null) {
+      _selectedDay = user!.dataNascimento!.day;
+      _selectedMonth = user.dataNascimento!.month;
+      _selectedYear = user.dataNascimento!.year;
     }
-
-    if (!_emailRegex.hasMatch(value.trim())) {
-      setState(() => _emailError = 'E-mail inválido');
-      return;
-    }
-
-    setState(() => _emailError = null);
   }
 
   // ------------------ DATA ------------------
@@ -74,33 +75,17 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
       return null;
     }
 
-    return DateTime(_selectedYear!, _selectedMonth!, _selectedDay!);
+    return DateTime(
+      _selectedYear!,
+      _selectedMonth!,
+      _selectedDay!,
+    );
   }
-
-  // ------------------ VALIDACAO ------------------
 
   bool get _isFormValid {
     return _nomeController.text.trim().isNotEmpty &&
         _apelidoController.text.trim().isNotEmpty &&
-        _emailController.text.trim().isNotEmpty &&
-        _birthDate != null &&
-        _emailError == null;
-  }
-
-  // ------------------ LOG ------------------
-
-  void _logUserData() {
-    debugPrint('🧑‍💼 DADOS DO USUÁRIO SALVOS:');
-    debugPrint('➡️ Nome: ${_nomeController.text.trim()}');
-    debugPrint('➡️ Apelido: ${_apelidoController.text.trim()}');
-    debugPrint('➡️ E-mail: ${_emailController.text.trim()}');
-    debugPrint('➡️ Gênero: $_genderValue');
-    debugPrint(
-      '➡️ Data de Nascimento: '
-          '${_birthDate!.day.toString().padLeft(2, '0')}/'
-          '${_birthDate!.month.toString().padLeft(2, '0')}/'
-          '${_birthDate!.year}',
-    );
+        _emailController.text.trim().isNotEmpty;
   }
 
   // ------------------ SUBMIT ------------------
@@ -108,32 +93,27 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
   Future<void> _handleSubmit() async {
     if (!_isFormValid || _isSubmitting) return;
 
+    final user = ref.read(authProvider).value;
+    if (user == null) return;
+
     setState(() => _isSubmitting = true);
 
     try {
-      _logUserData();
-
-      await ref.read(authProvider.notifier).updateUserProfile(
+      final updated = user.copyWith(
         nome: _nomeController.text.trim(),
         apelido: _apelidoController.text.trim(),
         email: _emailController.text.trim(),
         genero: _genderValue,
-        dataNascimento: _birthDate!,
+        dataNascimento: _birthDate,
+        isSynced: false,
+        updatedAt: DateTime.now(),
       );
 
-      if (mounted) {
-        // ✅ Aguarda um frame para garantir que o estado foi atualizado
-        await Future.delayed(const Duration(milliseconds: 100));
+      await ref
+          .read(authProvider.notifier)
+          .updateLocalProfile(updated);
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ListsScreen(listType: 'entry'),
-          ),
-        );
-      }
-    } catch (e) {
-      // Erro já tratado pelo listener
-      debugPrint('❌ Erro no submit: $e');
+      if (mounted) Navigator.pop(context);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -145,25 +125,12 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
-    // 🔴 Listener para erros
-    ref.listen(authProvider, (_, next) {
-      next.whenOrNull(
-        error: (e, _) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString()),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-      );
-    });
-
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: cMainColor,
+        foregroundColor: Colors.white,
+        title: const Text('Editar Perfil'),
+      ),
       backgroundColor: Colors.white,
       body: Container(
         width: double.infinity,
@@ -172,25 +139,26 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 48),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 0, 12),
-              child: Text('Dados Pessoais', style: tTitle),
-            ),
+            const SizedBox(height: 12),
+
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  padding:
+                  const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: Column(
                     children: [
                       Expanded(
                         child: ListView(
                           children: [
+                            const SizedBox(height: 18),
                             Text('Nome', style: tLabel),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: _nomeController,
                               decoration: inputDecoration,
@@ -199,6 +167,7 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                             const SizedBox(height: 24),
 
                             Text('Apelido', style: tLabel),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: _apelidoController,
                               decoration: inputDecoration,
@@ -207,13 +176,12 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                             const SizedBox(height: 24),
 
                             Text('E-mail', style: tLabel),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: inputDecoration.copyWith(
-                                errorText: _emailError,
-                              ),
-                              onChanged: _validateEmail,
+                              keyboardType:
+                              TextInputType.emailAddress,
+                              decoration: inputDecoration,
                               enabled: !_isSubmitting,
                             ),
                             const SizedBox(height: 24),
@@ -222,7 +190,7 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                             KwangaDropdownButton<String>(
                               value: _genderValue,
                               labelText: '',
-                              hintText: 'Escolha o seu Gênero',
+                              hintText: 'Escolha o gênero',
                               items: _genders
                                   .map(
                                     (g) => DropdownMenuItem(
@@ -233,11 +201,8 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                                   .toList(),
                               onChanged: _isSubmitting
                                   ? null
-                                  : (value) {
-                                setState(() {
-                                  _genderValue = value!;
-                                });
-                              },
+                                  : (v) =>
+                                  setState(() => _genderValue = v),
                             ),
                             const SizedBox(height: 24),
 
@@ -307,12 +272,51 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                                         .toList(),
                                     onChanged: _isSubmitting
                                         ? null
-                                        : (v) => setState(() => _selectedDay = v),
+                                        : (v) =>
+                                        setState(() => _selectedDay = v),
                                   ),
                                 ),
                               ],
                             ),
                           ],
+                        ),
+                      ),
+
+                      // ------------------ BOTÃO ------------------
+                      SafeArea(
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cMainColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: (!_isFormValid || _isSubmitting)
+                                ? null
+                                : _handleSubmit,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child:
+                              CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                                : const Text(
+                              'Salvar alterações',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -321,38 +325,6 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
               ),
             ),
           ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: cMainColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            onPressed: _handleSubmit,
-            child: _isSubmitting
-                ? const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-                : const Text(
-              'Salvar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ),
         ),
       ),
     );

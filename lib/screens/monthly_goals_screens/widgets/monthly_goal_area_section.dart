@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kwanga/custom_themes/blue_accent_theme.dart';
 import 'package:kwanga/custom_themes/text_style.dart';
 import 'package:kwanga/models/life_area_model.dart';
 import 'package:kwanga/models/monthly_goal_model.dart';
@@ -7,7 +6,8 @@ import 'package:kwanga/models/annual_goal_model.dart';
 import 'package:kwanga/models/vision_model.dart';
 import 'package:kwanga/widgets/cards/kwanga_empty_card.dart';
 
-import 'monthly_goal_card.dart';
+import '../monthly_goal_projects_screen.dart';
+import 'monthly_goal_widget.dart';
 
 class MonthlyGoalAreaSection extends StatelessWidget {
   final LifeAreaModel area;
@@ -19,6 +19,7 @@ class MonthlyGoalAreaSection extends StatelessWidget {
 
   final void Function(AnnualGoalModel?) onAdd;
   final void Function(MonthlyGoalModel) onEdit;
+  final void Function(MonthlyGoalModel) onDelete;
 
   const MonthlyGoalAreaSection({
     super.key,
@@ -30,6 +31,7 @@ class MonthlyGoalAreaSection extends StatelessWidget {
     required this.selectedMonth,
     required this.onAdd,
     required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -44,7 +46,10 @@ class MonthlyGoalAreaSection extends StatelessWidget {
           children: [
             if (area.iconPath.isNotEmpty)
               area.isSystem
-                  ? Image.asset("assets/icons/${area.iconPath}.png", width: 24)
+                  ? Image.asset(
+                "assets/icons/${area.iconPath}.png",
+                width: 24,
+              )
                   : Image.asset(area.iconPath, width: 24),
             const SizedBox(width: 8),
             Text(area.designation, style: tSmallTitle),
@@ -60,26 +65,30 @@ class MonthlyGoalAreaSection extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: goals.map((g) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: Container(
-                  decoration: BoxDecoration(boxShadow: [cDefaultShadow]),
-                  child: MonthlyGoalCard(
-                    goal: g,
-                    onEdit: () => onEdit(g),
-                  ),
-                ),
+              return MonthlyGoalWidget(
+                goal: g,
+                onEdit: () => onEdit(g),
+                onDelete: () => onDelete(g),
+                onOpenProjects: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MonthlyGoalProjectsScreen(
+                        monthlyGoal: g,
+                        area: area,
+                      ),
+                    ),
+                  );
+                },
               );
             }).toList(),
           ),
-
-        const SizedBox(height: 16),
       ],
     );
   }
 
   AnnualGoalModel? _findAnnualGoalForArea() {
-    for (final annual in allAnnualGoals.where((a) => a.year == selectedYear)) {
+    for (final annual
+    in allAnnualGoals.where((a) => a.year == selectedYear)) {
       final vision = visions.firstWhere(
             (v) => v.id == annual.visionId,
         orElse: () => VisionModel(

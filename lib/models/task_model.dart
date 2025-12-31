@@ -1,6 +1,10 @@
 import 'dart:convert';
-
 import 'package:uuid/uuid.dart';
+
+class Nullable<T> {
+  final T? value;
+  const Nullable(this.value);
+}
 
 class TaskModel {
   final String id;
@@ -28,7 +32,7 @@ class TaskModel {
     String? id,
     required this.userId,
     required this.listId,
-    this.projectId,  // ✅ REMOVIDO 'required'
+    this.projectId,
     required this.description,
     required this.listType,
     this.deadline,
@@ -43,6 +47,7 @@ class TaskModel {
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
+  /// ⚠️ copyWith seguro para campos removíveis
   TaskModel copyWith({
     String? id,
     int? userId,
@@ -50,9 +55,11 @@ class TaskModel {
     String? projectId,
     String? description,
     String? listType,
-    DateTime? deadline,
-    DateTime? time,
-    List<String>? frequency,
+
+    Nullable<DateTime?>? deadline,
+    Nullable<DateTime?>? time,
+    Nullable<List<String>?>? frequency,
+
     int? completed,
     String? linkedActionId,
     int? orderIndex,
@@ -63,12 +70,15 @@ class TaskModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       listId: listId ?? this.listId,
-      projectId: projectId ?? this.projectId,  // ✅ CORRIGIDO
+      projectId: projectId ?? this.projectId,
       description: description ?? this.description,
       listType: listType ?? this.listType,
-      deadline: deadline ?? this.deadline,
-      time: time ?? this.time,
-      frequency: frequency ?? this.frequency,
+
+      // 🔥 aqui está a correção crítica
+      deadline: deadline != null ? deadline.value : this.deadline,
+      time: time != null ? time.value : this.time,
+      frequency: frequency != null ? frequency.value : this.frequency,
+
       completed: completed ?? this.completed,
       linkedActionId: linkedActionId ?? this.linkedActionId,
       orderIndex: orderIndex ?? this.orderIndex,
@@ -86,7 +96,9 @@ class TaskModel {
       'description': description,
       'listType': listType,
       'deadline': deadline?.millisecondsSinceEpoch,
-      'time': time != null ? time!.hour * 3600000 + time!.minute * 60000 : null,
+      'time': time != null
+          ? time!.hour * 3600000 + time!.minute * 60000
+          : null,
       'frequency': frequency != null ? jsonEncode(frequency) : null,
       'completed': completed,
       'linked_action_id': linkedActionId,
@@ -108,7 +120,8 @@ class TaskModel {
           ? DateTime.fromMillisecondsSinceEpoch(map['deadline'])
           : null,
       time: map['time'] != null
-          ? DateTime(0, 1, 1).add(Duration(milliseconds: map['time']))
+          ? DateTime(0, 1, 1)
+          .add(Duration(milliseconds: map['time']))
           : null,
       frequency: map['frequency'] != null
           ? List<String>.from(jsonDecode(map['frequency']))

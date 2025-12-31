@@ -17,7 +17,7 @@ class AuthBackground extends StatelessWidget {
         Opacity(
           opacity: opacity,
           child: Image.asset(
-            'assets/background.jpg',
+            'assets/img.png',
             width: double.infinity,
             height: double.infinity,
             fit: BoxFit.cover,

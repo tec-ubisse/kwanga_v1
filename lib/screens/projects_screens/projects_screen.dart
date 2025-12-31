@@ -180,11 +180,6 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
             projectsByArea[area.id]!.add(p);
           }
 
-          final orderedAreas = [
-            ...lifeAreas.where((a) => (projectsByArea[a.id]?.isNotEmpty ?? false)),
-            ...lifeAreas.where((a) => !(projectsByArea[a.id]?.isNotEmpty ?? false)),
-          ];
-
           return Column(
             children: [
               // filtros
@@ -216,7 +211,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    for (final area in orderedAreas)
+                    for (final area in lifeAreas)
                       LifeAreaSection(
                         area: area,
                         projects: projectsByArea[area.id] ?? [],
