@@ -49,14 +49,14 @@ class PurposesScreen extends ConsumerWidget {
           const Center(child: Text('Erro ao carregar áreas')),
           data: (areas) {
             return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: areas.length,
               itemBuilder: (_, i) {
                 final area = areas[i];
 
                 return Padding(
                   padding: EdgeInsets.only(
-                    top: i == 0 ? 16 : 0,
+                    top: 16,
                   ),
                   child: PurposeAreaSection(
                     area: area,
