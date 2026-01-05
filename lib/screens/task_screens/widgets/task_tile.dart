@@ -34,9 +34,9 @@ class TaskTile extends StatelessWidget {
     final isAction = task.listType == 'action';
 
     return CardContainer(
-      padding: const EdgeInsets.only(left: 16.0),
+      padding: const EdgeInsets.only(left: 16),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         child: Slidable(
           key: ValueKey(task.id),
           endActionPane: ActionPane(
@@ -49,69 +49,86 @@ class TaskTile extends StatelessWidget {
                   foregroundColor: Colors.white,
                   icon: Icons.playlist_add,
                   label: "Mover",
-                  onPressed: (ctx) {
-                    Slidable.of(ctx)?.close();
-                    onMove!(task);
-                  },
+                  onPressed: (_) => onMove!(task),
                 ),
               SlidableAction(
                 backgroundColor: cSecondaryColor,
-                onPressed: (_) {
-                  Slidable.of(context)?.close();
-                  onUpdate(task);
-                },
                 icon: Icons.edit,
                 label: "Editar",
+                onPressed: (_) => onUpdate(task),
               ),
               SlidableAction(
                 backgroundColor: cTertiaryColor,
                 foregroundColor: Colors.white,
-                onPressed: (_) {
-                  Slidable.of(context)?.close();
-                  onDelete(task);
-                },
                 icon: Icons.delete,
                 label: "Eliminar",
+                onPressed: (_) => onDelete(task),
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding:
-            const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            onLongPress: onLongPress,
-            title: Text(
-              task.description,
-              style: tNormal.copyWith(
-                decoration: isCompleted ? TextDecoration.lineThrough : null,
-              ),
-            ),
-            subtitle: _TaskMetaRow(task: task),
-            trailing: isSelected
-                ? const Padding(
-              padding: EdgeInsets.only(right: 8.0),
-              child: Icon(Icons.check, color: cWhiteColor),
-            )
-                : isAction
-                ? Transform.scale(
-              scale: 1.4,
-              child: Checkbox(
-                value: isCompleted,
-                activeColor: cSecondaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
+
+          /// 🔥 SUBSTITUIÇÃO DO ListTile
+          child: Container(
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12.0), color: Colors.white,),
+            padding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Conteúdo principal
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.description,
+                        style: tNormal.copyWith(
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _TaskMetaRow(task: task),
+                    ],
+                  ),
                 ),
-                side: const BorderSide(color: cBlackColor),
-                onChanged: (_) =>
-                    onToggleFinal(task, isCompleted ? 0 : 1),
-              ),
-            )
-                : null,
+
+                /// Trailing
+                if (isSelected)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child:
+                    Icon(Icons.check, color: cWhiteColor),
+                  )
+                else if (isAction)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Transform.scale(
+                      scale: 1.4,
+                      child: Checkbox(
+                        value: isCompleted,
+                        activeColor: cSecondaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        side: const BorderSide(color: cBlackColor),
+                        onChanged: (_) => onToggleFinal(
+                          task,
+                          isCompleted ? 0 : 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
 
 class _TaskMetaRow extends StatelessWidget {
   final TaskModel task;

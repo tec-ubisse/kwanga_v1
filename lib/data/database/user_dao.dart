@@ -5,10 +5,7 @@ import 'package:kwanga/data/database/database_helper.dart';
 class UserDao {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
-  // ----------------------------------------------------------
-  // CREATE / UPSERT
-  // ----------------------------------------------------------
-  Future<int> insertOrReplace(UserModel user) async {
+  Future<int> insert(UserModel user) async {
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -23,24 +20,15 @@ class UserDao {
         'genero': user.genero,
         'data_nascimento': user.dataNascimento?.millisecondsSinceEpoch,
         'created_at': user.createdAt?.millisecondsSinceEpoch ?? now,
-        'updated_at': now,
+        'updated_at': user.updatedAt?.millisecondsSinceEpoch ?? now,
         'is_deleted': user.isDeleted ? 1 : 0,
         'is_synced': user.isSynced ? 1 : 0,
       },
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      conflictAlgorithm: ConflictAlgorithm.abort,
     );
   }
 
-  /// Garante que o user existe localmente (usado no bootstrap)
-  Future<void> ensureUser(UserModel user) async {
-    final exists = await this.exists(user.id!);
-    if (!exists) {
-      await insertOrReplace(user);
-    }
-  }
-
-  /// 🔥 MÉTODO CRÍTICO PARA FKs
-  Future<bool> exists(int userId) async {
+  Future<bool> _exists(int userId) async {
     final db = await _dbHelper.database;
 
     final result = await db.rawQuery(
@@ -51,9 +39,19 @@ class UserDao {
     return result.isNotEmpty;
   }
 
+  Future<void> ensureUser(UserModel user) async {
+    if (user.id == null) return;
+
+    final exists = await _exists(user.id!);
+    if (!exists) {
+      await insert(user);
+    }
+  }
+
   // ----------------------------------------------------------
   // READ
   // ----------------------------------------------------------
+
   Future<UserModel?> getById(int id) async {
     final db = await _dbHelper.database;
 
@@ -65,7 +63,6 @@ class UserDao {
     );
 
     if (result.isEmpty) return null;
-
     return _mapToUser(result.first);
   }
 
@@ -80,7 +77,6 @@ class UserDao {
     );
 
     if (result.isEmpty) return null;
-
     return _mapToUser(result.first);
   }
 
@@ -96,9 +92,48 @@ class UserDao {
     return result.map(_mapToUser).toList();
   }
 
+  Future<List<UserModel>> getUnsyncedUsers() async {
+    final db = await _dbHelper.database;
+
+    final result = await db.query(
+      'users',
+      where: 'is_synced = 0 AND is_deleted = 0',
+    );
+
+    return result.map(_mapToUser).toList();
+  }
+
   // ----------------------------------------------------------
-  // UPDATE
+  // API SYNC
   // ----------------------------------------------------------
+
+  Future<int> insertOrReplaceFromApi(UserModel user) async {
+    final db = await _dbHelper.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    return await db.insert(
+      'users',
+      {
+        'id': user.id,
+        'phone': user.phone,
+        'nome': user.nome,
+        'apelido': user.apelido,
+        'email': user.email,
+        'genero': user.genero,
+        'data_nascimento': user.dataNascimento?.millisecondsSinceEpoch,
+        'created_at': user.createdAt?.millisecondsSinceEpoch ?? now,
+        'updated_at': user.updatedAt?.millisecondsSinceEpoch ?? now,
+        'is_deleted': user.isDeleted ? 1 : 0,
+        'is_synced': 1,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // ----------------------------------------------------------
+  // UPDATE / DELETE
+  // ----------------------------------------------------------
+
   Future<int> update(UserModel user) async {
     if (user.id == null) {
       throw ArgumentError('❌ User ID cannot be null for update');
@@ -106,17 +141,32 @@ class UserDao {
 
     final db = await _dbHelper.database;
 
+    // ⚠️ UPDATE PARCIAL: só escreve o que NÃO é null
+    final Map<String, dynamic> values = {
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+      'is_synced': user.isSynced ? 1 : 0,
+    };
+
+    if (user.nome != null) {
+      values['nome'] = user.nome;
+    }
+    if (user.apelido != null) {
+      values['apelido'] = user.apelido;
+    }
+    if (user.email != null) {
+      values['email'] = user.email;
+    }
+    if (user.genero != null) {
+      values['genero'] = user.genero;
+    }
+    if (user.dataNascimento != null) {
+      values['data_nascimento'] =
+          user.dataNascimento!.millisecondsSinceEpoch;
+    }
+
     final result = await db.update(
       'users',
-      {
-        'nome': user.nome,
-        'apelido': user.apelido,
-        'email': user.email,
-        'genero': user.genero,
-        'data_nascimento': user.dataNascimento?.millisecondsSinceEpoch,
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-        'is_synced': user.isSynced ? 1 : 0,
-      },
+      values,
       where: 'id = ? AND is_deleted = 0',
       whereArgs: [user.id],
     );
@@ -128,9 +178,7 @@ class UserDao {
     return result;
   }
 
-  // ----------------------------------------------------------
-  // SOFT DELETE
-  // ----------------------------------------------------------
+
   Future<bool> softDelete(int id) async {
     final db = await _dbHelper.database;
 
@@ -151,6 +199,7 @@ class UserDao {
   // ----------------------------------------------------------
   // HELPERS
   // ----------------------------------------------------------
+
   UserModel _mapToUser(Map<String, dynamic> map) {
     return UserModel(
       id: map['id'] as int?,

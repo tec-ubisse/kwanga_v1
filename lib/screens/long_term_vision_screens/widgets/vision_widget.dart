@@ -27,13 +27,13 @@ class VisionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const double safeProgress = 0.1;
+    const double safeProgress = 0.0;
     const int percent = 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        decoration: BoxDecoration(boxShadow: [cDefaultShadow]),
+        decoration: BoxDecoration(boxShadow: [cDefaultShadow],),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Slidable(

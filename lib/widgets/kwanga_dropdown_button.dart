@@ -19,6 +19,9 @@ class KwangaDropdownButton<T> extends StatelessWidget {
   /// Default false → não quebra chamadas existentes
   final bool isDisabled;
 
+  /// Novo: permite customizar como o item selecionado é exibido
+  final DropdownButtonBuilder? selectedItemBuilder;
+
   const KwangaDropdownButton({
     super.key,
     required this.items,
@@ -29,6 +32,7 @@ class KwangaDropdownButton<T> extends StatelessWidget {
     this.errorMessage,
     this.disabledMessage,
     this.isDisabled = false,
+    this.selectedItemBuilder,
   });
 
   /// Dropdown fica desabilitado se:
@@ -87,12 +91,18 @@ class KwangaDropdownButton<T> extends StatelessWidget {
                 ),
 
                 /// Define como o item aparece no botão após selecionado
+                /// IMPORTANTE: Pega o child do item ORIGINAL (antes do wrap no Container)
                 selectedItemBuilder: (BuildContext context) {
                   return items.map<Widget>((item) {
+                    // Extrai o child real, removendo o Container wrapper
+                    final originalChild = item.child is Container
+                        ? (item.child as Container).child
+                        : item.child;
+
                     return Container(
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: item.child,
+                      child: originalChild,
                     );
                   }).toList();
                 },

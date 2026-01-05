@@ -70,7 +70,7 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
                 MaterialPageRoute(
                   builder: (_) => widget.isLogin
                       ? ListsScreen(listType: 'entry')
-                      : const PersonalDataScreen(),
+                      : PersonalDataScreen(),
                 ),
                     (_) => false,
               );

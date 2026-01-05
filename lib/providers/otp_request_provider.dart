@@ -14,29 +14,36 @@ class OtpRequestNotifier extends AsyncNotifier<void> {
     return;
   }
 
-  /// 📤 ENVIO DE OTP (DEV – SMS ainda não ativo)
+  /// 📤 ENVIO DE OTP
   Future<void> requestOTP(String phoneWithPrefix, bool isLogin) async {
     state = const AsyncValue.loading();
 
     try {
       final repo = ref.read(authRepositoryProvider);
 
-      Map<String, dynamic>? otpResponse;
+      Map<String, dynamic> otpResponse;
 
       if (isLogin) {
-        // LOGIN → backend gera OTP
+        // ✅ LOGIN → backend gera OTP diretamente
+        print('📱 Solicitando LOGIN OTP para: $phoneWithPrefix');
         otpResponse = await repo.requestLoginOTP(phoneWithPrefix);
       } else {
-        // CADASTRO → backend NÃO gera OTP
-        await repo.requestRegisterOTP(phoneWithPrefix);
+        // ✅ CADASTRO → primeiro verifica se pode registar
+        print('📱 Verificando se pode REGISTAR: $phoneWithPrefix');
+        final registerResponse = await repo.requestRegisterOTP(phoneWithPrefix);
 
-        // 🔁 FRONTEND FORÇA GERAÇÃO DE OTP VIA LOGIN
+        // Se chegou aqui, o registo foi aceite
+        print('✅ Registo aceite, solicitando OTP...');
+
+        // ⏱️ Pequeno delay para evitar sobrecarga no backend
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Agora solicita o OTP via login
         otpResponse = await repo.requestLoginOTP(phoneWithPrefix);
       }
 
-      /// 🔎 EXTRAÇÃO DO OTP (AGORA SEMPRE EXISTE)
-      final message =
-          otpResponse['otp_message'] ?? otpResponse['message'];
+      /// 🔎 EXTRAÇÃO DO OTP
+      final message = otpResponse['otp_message'] ?? otpResponse['message'];
 
       String? otp;
       if (message is String) {
@@ -50,14 +57,14 @@ class OtpRequestNotifier extends AsyncNotifier<void> {
         ref.read(otpProvider.notifier).setOTP(otp);
         print('🔐 OTP EXTRAÍDO (FRONTEND): $otp');
       } else {
-        print('❌ OTP NÃO ENCONTRADO MESMO APÓS LOGIN');
+        print('⚠️ OTP não encontrado na mensagem: $message');
       }
 
       print('✅ OTP ENVIADO (EVENTO)');
       state = const AsyncValue.data(null);
     } catch (e, st) {
+      print('❌ ERRO ao solicitar OTP: $e');
       state = AsyncValue.error(e, st);
     }
   }
-
 }

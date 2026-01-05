@@ -69,7 +69,7 @@ class HeaderSection extends StatelessWidget {
           CircularPercentIndicator(
             radius: 32,
             lineWidth: 12,
-            percent: 0.03,
+            percent: 0.0,
             center: Text('0%', style: tNormal,),
             progressColor: cMainColor,
             backgroundColor: Colors.grey.shade300,

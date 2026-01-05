@@ -22,7 +22,7 @@ class MonthlyGoalWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double safeProgress = 0.1;
+    const double safeProgress = 0.0;
     const int percent = 0;
 
     return Padding(

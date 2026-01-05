@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kwanga/data/services/api_service.dart';
 
+import '../../models/user.dart';
+
 // Provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final api = ref.watch(apiServiceProvider);
@@ -12,6 +14,38 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 class AuthRepository {
   final ApiService _api;
   AuthRepository(this._api);
+
+  DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    try {
+      return DateTime.parse(value.toString());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  UserModel _mapUserFromApi(Map<String, dynamic> map) {
+    final id = map['id'];
+    final phone = map['phone'];
+
+    if (id == null || phone == null) {
+      throw Exception('User inválido vindo da API');
+    }
+
+    return UserModel(
+      id: id,
+      phone: phone,
+      nome: map['first_name'],
+      apelido: map['last_name'],
+      email: map['email'],
+      genero: map['gender'],
+      dataNascimento: _parseDate(map['date_of_birth']),
+      createdAt: _parseDate(map['created_at']),
+      updatedAt: _parseDate(map['updated_at']),
+      isSynced: true,
+      isDeleted: false,
+    );
+  }
 
   // ============================================================
   // 🔐 OTP
@@ -37,17 +71,33 @@ class AuthRepository {
       String phone,
       String code,
       ) async {
+    print('📤 POST auth/login/verify_otp');
+    print('📤 BODY: {"phone": "$phone", "code": "$code"}');
+
     final res = await _api.post(
       'auth/login/verify_otp',
       {'phone': phone, 'code': code},
     );
 
+    print('📥 STATUS: ${res.statusCode}');
+    print('📥 BODY: ${res.body}');
+
     final body = jsonDecode(res.body);
 
     if (res.statusCode == 200 && body['status'] == true) {
+      // ⚠️ VERIFIQUE A ESTRUTURA CORRETA
+      final token = body['token'] ?? body['data']?['token'];
+
+      if (token == null) {
+        print('❌ TOKEN NÃO ENCONTRADO NA RESPOSTA!');
+        throw Exception('Token não retornado pela API');
+      }
+
+      print('✅ TOKEN RECEBIDO: $token');
+
       return {
-        'user': body['data']['user'],
-        'token': body['token'],
+        'user': _mapUserFromApi(body['data']['user']),
+        'token': token,
       };
     }
 
@@ -113,3 +163,4 @@ class AuthRepository {
     await _api.post('auth/logout', {}, auth: true);
   }
 }
+

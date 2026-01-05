@@ -22,6 +22,8 @@ class ProjectCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  static const _radius = BorderRadius.all(Radius.circular(16));
+
   String _formatDate(DateTime date) {
     final d = date.day.toString().padLeft(2, '0');
     final m = date.month.toString().padLeft(2, '0');
@@ -33,12 +35,10 @@ class ProjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final safeProgress = progress.clamp(0.0, 1.0);
     final percent = (safeProgress * 100).round();
-
-    /// Data criada na renderização
-    final createdAt = DateTime.now();
+    final createdAt = DateTime.now(); // temporário
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: _radius,
       child: Slidable(
         key: ValueKey(project.id),
         endActionPane: ActionPane(
@@ -61,75 +61,69 @@ class ProjectCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Material(
-          color: Colors.white,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 20,
-                horizontal: 16,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  /// TEXTO (TÍTULO + DATA)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          project.title,
-                          style: tNormal,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: cSecondaryColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatDate(createdAt),
-                              style: tSmall.copyWith(
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(width: 16),
-
-                  /// PROGRESSO
-                  SizedBox(
-                    width: 64,
-                    height: 64,
-                    child: CircularPercentIndicator(
-                      radius: 32,
-                      lineWidth: 10,
-                      percent: safeProgress,
-                      center: Text(
-                        '$percent%',
-                        style: tSmall.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+        /// Card
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            decoration: cardDecoration,
+            padding:
+            const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                /// TEXTO
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        project.title,
+                        style: tNormal,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      progressColor: cMainColor,
-                      backgroundColor: Colors.grey.shade300,
-                      circularStrokeCap: CircularStrokeCap.round,
-                      animation: true,
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: cSecondaryColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatDate(createdAt),
+                            style: tSmall.copyWith(
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                /// PROGRESSO
+                CircularPercentIndicator(
+                  radius: 32,
+                  lineWidth: 12,
+                  percent: safeProgress,
+                  center: Text(
+                    '$percent%',
+                    style: tSmall.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
-              ),
+                  progressColor: cMainColor,
+                  backgroundColor: Colors.grey.shade300,
+                  circularStrokeCap: CircularStrokeCap.round,
+                  animation: true,
+                ),
+              ],
             ),
           ),
         ),

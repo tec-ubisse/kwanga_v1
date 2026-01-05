@@ -38,54 +38,52 @@ class MonthlyGoalsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        8,
-        8,
-        8,
-        96, // espaço para BottomActionBar
-      ),
-      itemCount: 12,
-      itemBuilder: (context, index) {
-        final month = index + 1;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(
+          12,
+          8,
+          12,
+          96, // espaço reservado para BottomActionBar
+        ),
+        itemCount: 12,
+        itemBuilder: (context, index) {
+          final month = index + 1;
 
-        final monthGoals = goals
-            .where(
-              (g) =>
-          g.annualGoalsId == annualGoal.id &&
-              g.month == month,
-        )
-            .toList();
+          final monthGoals = goals
+              .where(
+                (g) =>
+            g.annualGoalsId == annualGoal.id &&
+                g.month == month,
+          )
+              .toList();
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ---------------- MÊS ----------------
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Text(
-                  _monthNames[index],
-                  style: tSmallTitle,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ----------- MÊS -----------
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  child: Text(
+                    _monthNames[index],
+                    style: tSmallTitle,
+                  ),
                 ),
-              ),
 
-              // ---------------- OBJECTIVOS ----------------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: monthGoals.isNotEmpty
-                    ? Column(
-                  children: monthGoals
-                      .map(
-                        (goal) => Padding(
-                      padding:
-                      const EdgeInsets.only(bottom: 12.0),
-                      child: MonthlyGoalCard(
-                        goal: goal,
-                        onEdit: () {
-                          Navigator.push(
+                // ----------- OBJECTIVOS -----------
+                if (monthGoals.isNotEmpty)
+                  Column(
+                    children: monthGoals
+                        .map(
+                          (goal) => Padding(
+                        padding:
+                        const EdgeInsets.only(bottom: 12),
+                        child: GestureDetector(
+                          onTap: (){Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
@@ -93,22 +91,39 @@ class MonthlyGoalsSection extends StatelessWidget {
                                     goalToEdit: goal,
                                   ),
                             ),
-                          );
-                        },
+                          );},
+                          child: MonthlyGoalCard(
+                            goal: goal,
+                            onEdit: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      CreateMonthlyGoalScreen(
+                                        goalToEdit: goal,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
-                    ),
+                    )
+                        .toList(),
                   )
-                      .toList(),
-                )
-                    : const KwangaEmptyCard(
-                  message:
-                  'Sem objectivo definido para este mês.',
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: KwangaEmptyCard(
+                      message:
+                      'Sem objectivo definido para este mês.',
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

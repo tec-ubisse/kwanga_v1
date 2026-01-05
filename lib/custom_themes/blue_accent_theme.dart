@@ -14,7 +14,7 @@ const defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 0);
 const cDefaultShadow = BoxShadow(
   color: Color(0x1A000000), // Colors starts with 0x1a to apply opacity of 10%
   offset: Offset(2, 4), // XY translation
-  blurRadius: 4, // Gaussian blur
+  blurRadius: 8, // Gaussian blur
   spreadRadius: 0, // Shadow expansion
 );
 

@@ -128,7 +128,7 @@ class GoalsByAnnualGoal extends ConsumerWidget {
                     CircularPercentIndicator(
                       radius: 36,
                       lineWidth: 12,
-                      percent: 0.01, // 🔧 substituir depois por progresso real
+                      percent: 0.0,
                       center: Text(
                         '0%', style: tNormal,
                       ),

@@ -130,35 +130,6 @@ class CustomDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          SafeArea(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (ctx) => const ConfigurationsScreen(),
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 20.0),
-                child: Row(
-                  spacing: 8.0,
-                  children: [
-                    Icon(Icons.settings, color: cBlackColor),
-                    Text(
-                      'Configurações',
-                      style: tNormal.copyWith(
-                        color: cBlackColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

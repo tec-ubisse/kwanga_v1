@@ -36,10 +36,10 @@ class ListsFilterBar extends StatelessWidget {
                 horizontal: 20.0,
               ),
               decoration: BoxDecoration(
-                color: isSelected ? cSecondaryColor : null,
+                color: isSelected ? cMainColor : null,
                 borderRadius: BorderRadius.circular(24.0),
                 border:
-                isSelected ? null : Border.all(color: cSecondaryColor),
+                isSelected ? null : Border.all(color: cMainColor),
               ),
               child: Text(
                 filters[index],

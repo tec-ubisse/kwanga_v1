@@ -23,7 +23,7 @@ class CardContainer extends StatelessWidget {
       height: height,
       padding: padding ?? const EdgeInsets.symmetric(horizontal: 16),
       width: double.infinity,
-      decoration: cardDecoration,
+      decoration: cardDecoration.copyWith(borderRadius: BorderRadius.circular(12.0)),
       child: child,
     );
   }

@@ -11,7 +11,6 @@ import 'package:kwanga/services/connection_wrapper.dart';
 
 import 'package:kwanga/custom_themes/app_colors.dart';
 
-/// Apenas para migrações iniciais controladas
 import 'data/database/lists_dao.dart';
 import 'data/services/reminder_service.dart';
 
@@ -39,9 +38,6 @@ class MyApp extends ConsumerWidget {
       title: 'Kwanga App',
       debugShowCheckedModeBanner: false,
 
-      // =====================
-      // THEME (segue o sistema)
-      // =====================
       theme: ThemeData(
         colorScheme: AppColors.lightScheme,
         useMaterial3: true,
@@ -52,9 +48,6 @@ class MyApp extends ConsumerWidget {
       ),
       themeMode: ThemeMode.system,
 
-      // =====================
-      // LOCALIZAÇÃO
-      // =====================
       locale: const Locale('pt'),
       supportedLocales: const [
         Locale('pt'),

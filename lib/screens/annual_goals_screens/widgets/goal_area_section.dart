@@ -32,7 +32,10 @@ class GoalAreaSection extends StatelessWidget {
             child: Row(
               children: [
                 area.isSystem
-                    ? Image.asset("assets/icons/${area.iconPath}.png", width: 22)
+                    ? Image.asset(
+                        "assets/icons/${area.iconPath}.png",
+                        width: 22,
+                      )
                     : Image.asset(area.iconPath, width: 22),
                 const SizedBox(width: 8),
                 Text(area.designation, style: tSmallTitle),
@@ -44,18 +47,24 @@ class GoalAreaSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: goals.isNotEmpty
                 ? Column(
-              children: goals
-                  .map((g) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: GoalWidget(
-                                    goal: g,
-                                    isCompleted: false, lifeArea: area, progress: 25,
-                      onTap: () => onGoalTap(g),
-                                  ),
-                  ))
-                  .toList(),
-            )
-                : KwangaEmptyCard(message: 'Sem objectivo definido para este ano.'),
+                    children: goals
+                        .map(
+                          (g) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: GoalWidget(
+                              goal: g,
+                              isCompleted: false,
+                              lifeArea: area,
+                              progress: 0,
+                              onTap: () => onGoalTap(g),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  )
+                : KwangaEmptyCard(
+                    message: 'Sem objectivo definido para este ano.',
+                  ),
           ),
         ],
       ),

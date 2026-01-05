@@ -4,6 +4,13 @@ import 'package:kwanga/models/user.dart';
 import 'package:kwanga/utils/secure_storage.dart';
 import 'package:kwanga/data/database/user_dao.dart';
 
+import '../data/repositories/user_sync_service.dart';
+
+/// 🔧 FLAG GLOBAL — DEV MODE
+/// true  → usuário sempre logado
+/// false → autenticação real (OTP + SecureStorage)
+const bool kDevAutoLogin = true;
+
 final authProvider = AsyncNotifierProvider<AuthNotifier, UserModel?>(
   AuthNotifier.new,
 );
@@ -12,13 +19,43 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   late final UserDao _userDao;
 
   // ============================================================
-  // 🔁 BOOTSTRAP / AUTO-LOGIN
+  // 🚀 BOOTSTRAP AUTH
   // ============================================================
-
   @override
   Future<UserModel?> build() async {
     _userDao = UserDao();
 
+    // ============================================================
+    // 🔧 DEV MODE — USUÁRIO SEMPRE LOGADO
+    // ============================================================
+    if (kDevAutoLogin) {
+      const devUserId = 1;
+
+      final existingUser = await _userDao.getById(devUserId);
+      if (existingUser != null) {
+        return existingUser;
+      }
+
+      final devUser = UserModel(
+        id: devUserId,
+        phone: '+258840000000',
+        nome: 'Usuário',
+        apelido: 'Dev',
+        email: 'dev@kwanga.app',
+        genero: 'Outro',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isSynced: true,
+        isDeleted: false,
+      );
+
+      await _userDao.ensureUser(devUser);
+      return devUser;
+    }
+
+    // ============================================================
+    // 🔐 PRODUÇÃO — LOGIN REAL (INALTERADO)
+    // ============================================================
     final token = await SecureStorage.getToken();
     final phone = await SecureStorage.getUserPhone();
     final userId = await SecureStorage.getUserId();
@@ -27,58 +64,42 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       return null;
     }
 
-    // ✅ Busca usuário completo do banco local
     final existingUser = await _userDao.getById(userId);
-
     if (existingUser != null) {
       return existingUser;
     }
 
-    // ⚠️ Usuário mínimo (restore parcial / primeiro arranque)
-    final user = UserModel(
+    final minimalUser = UserModel(
       id: userId,
       phone: phone,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      isSynced: true,
+      isSynced: false,
     );
 
-    // ✅ Garante existência local SEM apagar dados futuros
-    await _userDao.insertOrReplace(user);
+    await _userDao.ensureUser(minimalUser);
 
-    return user;
+    return await _userDao.getById(userId) ?? minimalUser;
   }
 
   // ============================================================
-  // 🔐 LOGIN OTP
+  // 🔐 LOGIN OTP (mantido para PROD)
   // ============================================================
-
-  Future<void> verifyOTP(
-      String phone,
-      String code,
-      ) async {
+  Future<void> verifyOTP(String phone, String code) async {
     state = const AsyncValue.loading();
 
     try {
       final repo = ref.read(authRepositoryProvider);
       final authData = await repo.loginVerifyOTP(phone, code);
 
-      final userData = authData['user'] as Map<String, dynamic>;
+      final user = authData['user'] as UserModel;
       final token = authData['token'] as String;
 
-      final user = UserModel.fromMap(userData);
+      await SecureStorage.saveAuthData(token, user.id!, user.phone);
+      await _userDao.insertOrReplaceFromApi(user);
 
-      // 🔐 Token fica apenas no SecureStorage
-      await SecureStorage.saveAuthData(
-        token,
-        user.id!,
-        user.phone,
-      );
-
-      // 👤 User sem token no SQLite
-      await _userDao.insertOrReplace(user);
-
-      state = AsyncValue.data(user);
+      final persistedUser = await _userDao.getById(user.id!);
+      state = AsyncValue.data(persistedUser ?? user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -87,7 +108,6 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   // ============================================================
   // 👤 PERFIL — UPDATE VIA BACKEND
   // ============================================================
-
   Future<void> updateUserProfile({
     required String nome,
     required String apelido,
@@ -125,7 +145,6 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       );
 
       await _userDao.update(updatedUser);
-
       state = AsyncValue.data(updatedUser);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -133,14 +152,8 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   }
 
   // ============================================================
-  // 🛠 PERFIL — UPDATE LOCAL (RESTORE / OFFLINE / CORREÇÃO)
+  // 🛠 PERFIL — UPDATE LOCAL (OFFLINE)
   // ============================================================
-
-  /// 🔥 ESTE MÉTODO É O QUE FALTAVA
-  /// Usado pela tela "Editar Perfil"
-  /// Não chama backend
-  /// Não mexe em token
-  /// Marca isSynced = false
   Future<void> updateLocalProfile(UserModel updatedUser) async {
     final currentUser = state.value;
     if (currentUser == null || currentUser.id == null) return;
@@ -155,17 +168,13 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
       isSynced: false,
     );
 
-    // 🔁 Atualiza estado em memória
     state = AsyncValue.data(merged);
-
-    // 💾 Persiste APENAS no SQLite
     await _userDao.update(merged);
   }
 
   // ============================================================
-  // 🔄 REFRESH USER (do banco local)
+  // 🔄 REFRESH USER
   // ============================================================
-
   Future<void> refreshUser() async {
     final currentUser = state.value;
     if (currentUser?.id == null) return;
@@ -181,11 +190,27 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   }
 
   // ============================================================
+  // 🔄 SYNC
+  // ============================================================
+  Future<void> syncIfNeeded() async {
+    if (kDevAutoLogin) return;
+
+    final service = UserSyncService(
+      _userDao,
+      ref.read(authRepositoryProvider),
+    );
+
+    await service.syncUsers();
+    await refreshUser();
+  }
+
+  // ============================================================
   // 🚪 LOGOUT
   // ============================================================
-
   Future<void> logout() async {
-    await SecureStorage.clearAll();
+    if (!kDevAutoLogin) {
+      await SecureStorage.clearAll();
+    }
     state = const AsyncValue.data(null);
   }
 }

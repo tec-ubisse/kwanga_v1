@@ -29,7 +29,8 @@ class GoalWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final safeProgress = (progress / 100).clamp(0.0, 1.0);
+    final safeProgress = (progress / 100);
+    // .clamp(0.0, 1.0)
     final percent = (safeProgress * 100).round();
 
     return Padding(

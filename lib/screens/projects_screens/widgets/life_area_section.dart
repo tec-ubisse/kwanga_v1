@@ -36,16 +36,14 @@ class LifeAreaSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
+
         Row(
           children: [
             if (area.iconPath.isNotEmpty)
-              area.isSystem
-                  ? Image.asset(
-                "assets/icons/${area.iconPath}.png",
-                width: 24,
-              )
-                  : Image.asset(
-                area.iconPath,
+              Image.asset(
+                area.isSystem
+                    ? "assets/icons/${area.iconPath}.png"
+                    : area.iconPath,
                 width: 24,
               ),
             const SizedBox(width: 8),
@@ -60,7 +58,9 @@ class LifeAreaSection extends StatelessWidget {
 
         /// --- LISTA OU PLACEHOLDER ---
         if (!hasProjects)
-          KwangaEmptyCard(message: 'Sem projectos nesta área')
+          const KwangaEmptyCard(
+            message: 'Sem projectos nesta área',
+          )
         else
           Column(
             children: [

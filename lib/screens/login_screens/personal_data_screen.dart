@@ -31,6 +31,24 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
 
   bool _isSubmitting = false;
 
+  // ------------------ MESES ------------------
+
+  String _monthName(int month) => [
+    '',
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
+  ][month];
+
   // ------------------ EMAIL ------------------
 
   void _validateEmail(String value) {
@@ -122,17 +140,13 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
       );
 
       if (mounted) {
-        // ✅ Aguarda um frame para garantir que o estado foi atualizado
         await Future.delayed(const Duration(milliseconds: 100));
 
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ListsScreen(listType: 'entry'),
-          ),
+          MaterialPageRoute(builder: (_) => ListsScreen(listType: 'entry')),
         );
       }
     } catch (e) {
-      // Erro já tratado pelo listener
       debugPrint('❌ Erro no submit: $e');
     } finally {
       if (mounted) {
@@ -147,7 +161,6 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // 🔴 Listener para erros
     ref.listen(authProvider, (_, next) {
       next.whenOrNull(
         error: (e, _) {
@@ -197,7 +210,6 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                               enabled: !_isSubmitting,
                             ),
                             const SizedBox(height: 24),
-
                             Text('Apelido', style: tLabel),
                             TextField(
                               controller: _apelidoController,
@@ -205,7 +217,6 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                               enabled: !_isSubmitting,
                             ),
                             const SizedBox(height: 24),
-
                             Text('E-mail', style: tLabel),
                             TextField(
                               controller: _emailController,
@@ -217,7 +228,6 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                               enabled: !_isSubmitting,
                             ),
                             const SizedBox(height: 24),
-
                             Text('Gênero', style: tLabel),
                             KwangaDropdownButton<String>(
                               value: _genderValue,
@@ -240,10 +250,10 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                               },
                             ),
                             const SizedBox(height: 24),
-
                             Text('Data de nascimento', style: tLabel),
                             Row(
                               children: [
+                                // ANO
                                 Expanded(
                                   child: KwangaDropdownButton<int>(
                                     value: _selectedYear,
@@ -268,19 +278,19 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
+                                // MÊS
                                 Expanded(
                                   child: KwangaDropdownButton<int>(
                                     value: _selectedMonth,
                                     labelText: '',
                                     hintText: 'Mês',
-                                    items: _months
-                                        .map(
-                                          (m) => DropdownMenuItem(
-                                        value: m,
-                                        child: Text('$m'),
-                                      ),
-                                    )
-                                        .toList(),
+                                    items: List.generate(12, (index) {
+                                      final monthNum = index + 1;
+                                      return DropdownMenuItem(
+                                        value: monthNum,
+                                        child: Text(_monthName(monthNum)),
+                                      );
+                                    }),
                                     onChanged: _isSubmitting
                                         ? null
                                         : (v) {
@@ -292,6 +302,7 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
+                                // DIA
                                 Expanded(
                                   child: KwangaDropdownButton<int>(
                                     value: _selectedDay,
@@ -307,7 +318,8 @@ class _PersonalDataScreenState extends ConsumerState<PersonalDataScreen> {
                                         .toList(),
                                     onChanged: _isSubmitting
                                         ? null
-                                        : (v) => setState(() => _selectedDay = v),
+                                        : (v) =>
+                                        setState(() => _selectedDay = v),
                                   ),
                                 ),
                               ],

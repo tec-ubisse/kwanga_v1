@@ -270,7 +270,7 @@ class _NewTaskScreenState extends ConsumerState<NewTaskScreen> {
           TextFormField(
             controller: _descriptionController,
             decoration:
-            inputDecoration.copyWith(labelText: 'Descrição'),
+            inputDecoration,
             maxLines: 3,
             validator: (v) =>
             v == null || v.trim().isEmpty ? 'Campo obrigatório' : null,
